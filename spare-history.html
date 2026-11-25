@@ -1,0 +1,1907 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spare Parts History | TNC</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+    --navy:#142d47;
+    --navy2:#1e4263;
+    --blue:#347fbd;
+    --blue-light:#eaf3fb;
+    --green:#15966a;
+    --orange:#dc9236;
+    --red:#dc5656;
+    --purple:#7966b4;
+    --bg:#f3f6fa;
+    --white:#fff;
+    --text:#25394d;
+    --muted:#7c8b9b;
+    --line:#e3eaf1;
+    --shadow:0 5px 20px rgba(25,52,78,.055);
+}
+
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    font-family:"Segoe UI",Tahoma,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+}
+
+button,input,select{font:inherit}
+button{cursor:pointer}
+
+.topbar{
+    background:linear-gradient(115deg,#142d47,#244d70);
+    color:white;
+    padding:20px 30px;
+    box-shadow:0 3px 15px rgba(0,0,0,.12);
+}
+
+.topbar-inner{
+    max-width:1550px;
+    margin:auto;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:13px;
+}
+
+.brand-icon{
+    width:43px;
+    height:43px;
+    background:rgba(255,255,255,.13);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:11px;
+    display:grid;
+    place-items:center;
+    font-size:22px;
+}
+
+.brand h1{
+    margin:0;
+    font-size:20px;
+    letter-spacing:.3px;
+}
+
+.brand p{
+    margin:5px 0 0;
+    font-size:12px;
+    opacity:.75;
+}
+
+.top-actions{
+    display:flex;
+    gap:9px;
+    flex-wrap:wrap;
+}
+
+.btn{
+    border:0;
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:12px;
+    font-weight:700;
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+    gap:7px;
+    transition:.18s;
+}
+
+.btn:hover{
+    filter:brightness(.96);
+    transform:translateY(-1px);
+}
+
+.btn-white{background:white;color:var(--navy)}
+.btn-excel{background:#16875c;color:white}
+.btn-blue{background:var(--blue);color:white}
+.btn-dark{background:var(--navy);color:white}
+.btn-gray{background:#edf1f5;color:#45596c}
+.btn-red{background:#fff0f0;color:var(--red)}
+.btn-sm{padding:7px 10px;font-size:11px}
+
+.container{
+    max-width:1550px;
+    margin:25px auto;
+    padding:0 25px 45px;
+}
+
+.welcome{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:15px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+}
+
+.welcome h2{
+    margin:0;
+    color:var(--navy);
+    font-size:23px;
+}
+
+.welcome p{
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:12px;
+}
+
+.updated{
+    color:var(--muted);
+    font-size:11px;
+}
+
+/* DATE FILTER */
+
+.period-panel{
+    background:white;
+    border:1px solid var(--line);
+    border-radius:13px;
+    padding:18px 20px;
+    box-shadow:var(--shadow);
+    margin-bottom:20px;
+}
+
+.section-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.section-title h3{
+    margin:0;
+    font-size:14px;
+    color:var(--navy);
+}
+
+.section-title span{
+    color:var(--muted);
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.6px;
+}
+
+.period-buttons{
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+}
+
+.period-btn{
+    padding:8px 13px;
+    border:1px solid #dfe7ef;
+    background:#fff;
+    color:#53677b;
+    border-radius:7px;
+    font-size:11px;
+    font-weight:650;
+}
+
+.period-btn:hover{
+    background:#f3f7fb;
+}
+
+.period-btn.active{
+    color:white;
+    background:var(--navy);
+    border-color:var(--navy);
+}
+
+.date-row{
+    display:flex;
+    align-items:flex-end;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.field{
+    min-width:160px;
+}
+
+.field label{
+    display:block;
+    color:#637589;
+    font-size:11px;
+    font-weight:650;
+    margin-bottom:6px;
+}
+
+.field input{
+    height:38px;
+    border:1px solid #dbe3eb;
+    border-radius:7px;
+    padding:0 10px;
+    outline:none;
+    color:var(--text);
+    font-size:12px;
+    background:white;
+}
+
+.field input:focus{
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(52,127,189,.09);
+}
+
+.period-summary{
+    margin-left:auto;
+    color:var(--muted);
+    font-size:11px;
+    align-self:center;
+}
+
+/* KPI */
+
+.kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.kpi{
+    background:white;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:19px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+}
+
+.kpi-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+}
+
+.kpi-label{
+    color:#748598;
+    font-size:11px;
+    font-weight:650;
+}
+
+.kpi-icon{
+    width:36px;
+    height:36px;
+    border-radius:9px;
+    display:grid;
+    place-items:center;
+    font-size:17px;
+}
+
+.kpi-value{
+    font-size:29px;
+    font-weight:800;
+    letter-spacing:-.5px;
+    color:var(--navy);
+    margin-top:13px;
+    font-variant-numeric:tabular-nums;
+}
+
+.kpi-sub{
+    color:#99a5b2;
+    font-size:10px;
+    margin-top:5px;
+}
+
+.kpi.blue .kpi-icon{background:#eaf3fb;color:#347fbd}
+.kpi.green .kpi-icon{background:#e7f6ef;color:#15966a}
+.kpi.orange .kpi-icon{background:#fff4e6;color:#dc9236}
+.kpi.purple .kpi-icon{background:#f0edfa;color:#7966b4}
+
+/* CHARTS */
+
+.chart-grid{
+    display:grid;
+    grid-template-columns:1.5fr 1fr;
+    gap:16px;
+    margin-bottom:20px;
+}
+
+.chart-card{
+    background:white;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:19px;
+    box-shadow:var(--shadow);
+    min-width:0;
+}
+
+.chart-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:18px;
+}
+
+.chart-head h3{
+    color:var(--navy);
+    font-size:14px;
+    margin:0;
+}
+
+.chart-head p{
+    color:var(--muted);
+    font-size:10px;
+    margin:5px 0 0;
+}
+
+.chart-badge{
+    background:#f0f5fa;
+    color:#60758a;
+    padding:6px 9px;
+    border-radius:6px;
+    font-size:10px;
+    white-space:nowrap;
+}
+
+.chart-box{
+    height:280px;
+    position:relative;
+}
+
+.chart-box.small{
+    height:280px;
+}
+
+/* TABLE PANEL */
+
+.panel{
+    background:white;
+    border:1px solid var(--line);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    margin-bottom:18px;
+    overflow:hidden;
+}
+
+.panel-head{
+    padding:17px 19px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+    border-bottom:1px solid var(--line);
+}
+
+.panel-head h3{
+    color:var(--navy);
+    font-size:14px;
+    margin:0;
+}
+
+.panel-head p{
+    color:var(--muted);
+    font-size:10px;
+    margin:5px 0 0;
+}
+
+.search-box{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.search-box input{
+    height:37px;
+    width:290px;
+    max-width:100%;
+    border:1px solid #dbe3eb;
+    border-radius:7px;
+    padding:0 11px;
+    outline:none;
+    font-size:12px;
+}
+
+.search-box input:focus{
+    border-color:var(--blue);
+}
+
+.table-wrap{overflow-x:auto}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1100px;
+}
+
+thead{background:#f5f8fb}
+
+th{
+    padding:13px 11px;
+    text-align:left;
+    color:#65788b;
+    font-size:10px;
+    white-space:nowrap;
+    border-bottom:1px solid var(--line);
+}
+
+td{
+    padding:12px 11px;
+    font-size:11px;
+    border-bottom:1px solid #edf1f5;
+    vertical-align:middle;
+}
+
+tbody tr:hover{background:#f8fbfe}
+
+.part-no{
+    font-weight:750;
+    color:var(--navy);
+}
+
+.qty{
+    font-weight:750;
+    font-variant-numeric:tabular-nums;
+}
+
+.remark{
+    max-width:140px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.actions{
+    display:flex;
+    gap:5px;
+    white-space:nowrap;
+}
+
+.empty{
+    text-align:center;
+    padding:42px 15px;
+    color:var(--muted);
+}
+
+.empty strong{
+    display:block;
+    color:var(--navy);
+    margin-bottom:5px;
+    font-size:14px;
+}
+
+.table-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:14px 18px;
+}
+
+.page-info{
+    font-size:11px;
+    color:var(--muted);
+}
+
+.pagination{
+    display:flex;
+    gap:5px;
+    align-items:center;
+}
+
+.pagination button{
+    height:31px;
+    min-width:31px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:white;
+    color:var(--text);
+    font-size:11px;
+}
+
+.pagination button.active{
+    background:var(--navy);
+    color:white;
+    border-color:var(--navy);
+}
+
+.pagination button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+}
+
+.page-size{
+    height:31px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:white;
+    padding:0 7px;
+    font-size:11px;
+    color:var(--text);
+}
+
+/* MODAL */
+
+.modal-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(13,30,47,.58);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+    padding:15px;
+}
+
+.modal-backdrop.show{display:flex}
+
+.modal{
+    width:100%;
+    max-width:760px;
+    max-height:92vh;
+    overflow:auto;
+    background:white;
+    border-radius:13px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+
+.modal-head{
+    background:linear-gradient(110deg,var(--navy),var(--navy2));
+    color:white;
+    padding:18px 21px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.modal-head h3{
+    margin:0;
+    font-size:16px;
+}
+
+.close-btn{
+    border:0;
+    background:rgba(255,255,255,.15);
+    color:white;
+    width:31px;
+    height:31px;
+    border-radius:7px;
+    font-size:19px;
+}
+
+.modal-body{padding:21px}
+
+.detail-banner{
+    padding:15px 17px;
+    border-radius:9px;
+    background:#f0f5fa;
+    border:1px solid #e1eaf2;
+    margin-bottom:16px;
+}
+
+.detail-banner small{
+    color:var(--muted);
+    font-size:10px;
+}
+
+.detail-banner h2{
+    margin:5px 0 0;
+    color:var(--navy);
+    font-size:22px;
+}
+
+.detail-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:11px;
+}
+
+.detail-item{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px;
+    min-width:0;
+}
+
+.detail-item.full{grid-column:1/-1}
+
+.detail-item label{
+    display:block;
+    color:var(--muted);
+    font-size:10px;
+    margin-bottom:6px;
+    font-weight:650;
+}
+
+.detail-item div{
+    font-size:13px;
+    font-weight:650;
+    color:var(--text);
+    overflow-wrap:anywhere;
+}
+
+.modal-foot{
+    padding:14px 21px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.loading{
+    text-align:center;
+    padding:40px;
+    color:var(--muted);
+}
+
+.spinner{
+    width:27px;
+    height:27px;
+    border:3px solid #e5edf5;
+    border-top-color:var(--blue);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    margin:0 auto 12px;
+}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast{
+    display:none;
+    position:fixed;
+    bottom:22px;
+    right:22px;
+    z-index:3000;
+    background:#183b59;
+    color:white;
+    padding:13px 17px;
+    border-radius:8px;
+    box-shadow:var(--shadow);
+    font-size:12px;
+    max-width:calc(100% - 44px);
+}
+
+.toast.show{display:block}
+
+@media(max-width:1000px){
+    .chart-grid{grid-template-columns:1fr}
+    .chart-box{height:260px}
+}
+
+@media(max-width:800px){
+    .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .period-summary{margin-left:0;width:100%}
+}
+
+@media(max-width:600px){
+    .topbar{padding:16px}
+    .brand h1{font-size:16px}
+    .brand-icon{width:37px;height:37px}
+    .top-actions{width:100%}
+    .top-actions button{flex:1}
+    .container{padding:0 12px 30px;margin:17px auto}
+    .welcome h2{font-size:19px}
+    .kpi-grid{gap:9px}
+    .kpi{padding:14px}
+    .kpi-value{font-size:23px}
+    .kpi-icon{width:31px;height:31px}
+    .period-panel{padding:15px}
+    .period-btn{padding:8px 10px}
+    .date-row .field{flex:1;min-width:125px}
+    .date-row .field input{width:100%}
+    .chart-card{padding:14px}
+    .chart-box{height:240px}
+    .search-box{width:100%}
+    .search-box input{width:100%}
+    .detail-grid{grid-template-columns:1fr}
+    .detail-item.full{grid-column:auto}
+    .modal-body{padding:14px}
+    .modal-foot button{flex:1}
+}
+
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">
+            <div class="brand-icon">📦</div>
+            <div>
+                <h1>TNC | SPARE PARTS MANAGEMENT</h1>
+                <p>SPARE PARTS HISTORY & ANALYTICS</p>
+            </div>
+        </div>
+
+        <div class="top-actions">
+            <button class="btn btn-white" onclick="location.href='spare-parts.html'">
+                ← หน้าบันทึก
+            </button>
+            <button class="btn btn-excel" onclick="exportExcel()">
+                ↓ Export Excel (.xlsx)
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+
+    <div class="welcome">
+        <div>
+            <h2>Spare Parts Dashboard</h2>
+            <p>ภาพรวมและประวัติการเบิก / สั่งทำอะไหล่</p>
+        </div>
+        <div class="updated" id="lastUpdated">กำลังโหลดข้อมูล...</div>
+    </div>
+
+    <!-- PERIOD FILTER -->
+    <section class="period-panel">
+        <div class="section-title">
+            <h3>📅 เลือกช่วงเวลาย้อนหลัง</h3>
+            <span>HISTORY PERIOD FILTER</span>
+        </div>
+
+        <div class="period-buttons">
+            <button class="period-btn" data-period="today" onclick="setPeriod('today')">วันนี้</button>
+            <button class="period-btn" data-period="7" onclick="setPeriod('7')">7 วัน</button>
+            <button class="period-btn" data-period="30" onclick="setPeriod('30')">30 วัน</button>
+            <button class="period-btn active" data-period="month" onclick="setPeriod('month')">เดือนนี้</button>
+            <button class="period-btn" data-period="lastmonth" onclick="setPeriod('lastmonth')">เดือนก่อน</button>
+            <button class="period-btn" data-period="3" onclick="setPeriod('3')">3 เดือน</button>
+            <button class="period-btn" data-period="6" onclick="setPeriod('6')">6 เดือน</button>
+            <button class="period-btn" data-period="year" onclick="setPeriod('year')">ปีนี้</button>
+            <button class="period-btn" data-period="all" onclick="setPeriod('all')">ทั้งหมด</button>
+        </div>
+
+        <div class="date-row">
+            <div class="field">
+                <label>วันที่เริ่มต้น</label>
+                <input type="date" id="dateFrom">
+            </div>
+            <div class="field">
+                <label>วันที่สิ้นสุด</label>
+                <input type="date" id="dateTo">
+            </div>
+            <button class="btn btn-blue" onclick="applyCustomDate()">ค้นหาช่วงวันที่</button>
+            <button class="btn btn-gray" onclick="resetPeriod()">รีเซ็ต</button>
+            <div class="period-summary" id="periodSummary">กำลังแสดงเดือนนี้</div>
+        </div>
+    </section>
+
+    <!-- KPI -->
+    <section class="kpi-grid">
+        <div class="kpi blue">
+            <div class="kpi-top">
+                <div class="kpi-label">รายการทั้งหมด</div>
+                <div class="kpi-icon">▤</div>
+            </div>
+            <div class="kpi-value" id="totalRecords">0</div>
+            <div class="kpi-sub">TOTAL TRANSACTIONS</div>
+        </div>
+
+        <div class="kpi purple">
+            <div class="kpi-top">
+                <div class="kpi-label">จำนวน PART NO</div>
+                <div class="kpi-icon">▦</div>
+            </div>
+            <div class="kpi-value" id="totalParts">0</div>
+            <div class="kpi-sub">UNIQUE PART NUMBERS</div>
+        </div>
+
+        <div class="kpi green">
+            <div class="kpi-top">
+                <div class="kpi-label">ยอดเบิกรวม</div>
+                <div class="kpi-icon">↓</div>
+            </div>
+            <div class="kpi-value" id="totalWithdraw">0</div>
+            <div class="kpi-sub">TOTAL WITHDRAW QUANTITY</div>
+        </div>
+
+        <div class="kpi orange">
+            <div class="kpi-top">
+                <div class="kpi-label">ยอดสั่งทำรวม</div>
+                <div class="kpi-icon">↑</div>
+            </div>
+            <div class="kpi-value" id="totalOrder">0</div>
+            <div class="kpi-sub">TOTAL ORDER QUANTITY</div>
+        </div>
+    </section>
+
+    <!-- CHARTS -->
+    <section class="chart-grid">
+
+        <div class="chart-card">
+            <div class="chart-head">
+                <div>
+                    <h3>สรุปยอดเบิกและสั่งทำ</h3>
+                    <p>WITHDRAW VS ORDER BY MONTH</p>
+                </div>
+                <span class="chart-badge">Monthly Comparison</span>
+            </div>
+            <div class="chart-box">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-head">
+                <div>
+                    <h3>แนวโน้มรายการอะไหล่</h3>
+                    <p>TRANSACTION TREND</p>
+                </div>
+                <span class="chart-badge">History Trend</span>
+            </div>
+            <div class="chart-box small">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- HISTORY TABLE -->
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <h3>ประวัติรายการอะไหล่</h3>
+                <p>SPARE PARTS TRANSACTION HISTORY</p>
+            </div>
+
+            <div class="search-box">
+                <input id="searchInput" type="text"
+                    placeholder="ค้นหา PART NO / CUSTOMER / CODE / ผู้เบิก..."
+                    oninput="applySearch()">
+                <button class="btn btn-gray" onclick="loadRecords()">↻ รีเฟรช</button>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>PART NO</th>
+                        <th>PROCESS</th>
+                        <th>CUSTOMER</th>
+                        <th>ชื่ออะไหล่</th>
+                        <th>ขนาด / CODE</th>
+                        <th>เบิก</th>
+                        <th>สั่งทำ</th>
+                        <th>วันที่อะไหล่เข้า</th>
+                        <th>REMARK / ผู้เบิก</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="11">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            กำลังโหลดข้อมูล...
+                        </div>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span class="page-info" id="pageInfo">แสดง 0 รายการ</span>
+                <select class="page-size" id="pageSize" onchange="changePageSize()">
+                    <option value="15">15 / หน้า</option>
+                    <option value="30">30 / หน้า</option>
+                    <option value="50">50 / หน้า</option>
+                    <option value="100">100 / หน้า</option>
+                </select>
+            </div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </section>
+
+</main>
+
+<!-- DETAIL MODAL -->
+<div class="modal-backdrop" id="detailModal" onclick="closeModalOutside(event)">
+    <div class="modal">
+        <div class="modal-head">
+            <h3>รายละเอียดรายการอะไหล่</h3>
+            <button class="close-btn" onclick="closeDetail()">×</button>
+        </div>
+
+        <div class="modal-body" id="detailContent"></div>
+
+        <div class="modal-foot">
+            <button class="btn btn-gray" onclick="closeDetail()">ปิด</button>
+            <button class="btn btn-blue" onclick="printDetail()">▤ พิมพ์รายละเอียด</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =================================
+   SUPABASE CONFIG
+================================= */
+
+const SUPABASE_URL = "https://enmzfxdswzhatvcenrds.supabase.co";
+const SUPABASE_KEY = "sb_publishable_DkoWB0IDDgodellT5vgcLQ_YdqIhKdI";
+
+const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+/* =================================
+   STATE
+================================= */
+
+let allRecords = [];
+let periodRecords = [];
+let filteredRecords = [];
+
+let currentPage = 1;
+let pageSize = 15;
+
+let activePeriod = "month";
+let rangeStart = "";
+let rangeEnd = "";
+
+let selectedRecord = null;
+
+let monthlyChart = null;
+let trendChart = null;
+
+/* =================================
+   HELPERS
+================================= */
+
+function escapeHTML(value){
+    return String(value ?? "").replace(/[&<>"']/g,char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#039;"
+    })[char]);
+}
+
+function numberFormat(value){
+    return Number(value || 0).toLocaleString("en-US");
+}
+
+function localISO(date){
+    const y = date.getFullYear();
+    const m = String(date.getMonth()+1).padStart(2,"0");
+    const d = String(date.getDate()).padStart(2,"0");
+    return `${y}-${m}-${d}`;
+}
+
+function parseLocalDate(value){
+    if(!value) return null;
+    const p = String(value).slice(0,10).split("-");
+    if(p.length !== 3) return null;
+    return new Date(Number(p[0]),Number(p[1])-1,Number(p[2]));
+}
+
+function formatDate(value){
+    if(!value) return "-";
+    const d = parseLocalDate(value);
+    if(!d) return "-";
+
+    return [
+        String(d.getDate()).padStart(2,"0"),
+        String(d.getMonth()+1).padStart(2,"0"),
+        String(d.getFullYear()).slice(-2)
+    ].join("/");
+}
+
+function showToast(message){
+    const el = document.getElementById("toast");
+    el.textContent = message;
+    el.classList.add("show");
+
+    setTimeout(() => el.classList.remove("show"),3000);
+}
+
+function startOfMonth(date){
+    return new Date(date.getFullYear(),date.getMonth(),1);
+}
+
+function endOfMonth(date){
+    return new Date(date.getFullYear(),date.getMonth()+1,0);
+}
+
+function monthLabel(date){
+    return date.toLocaleDateString("th-TH",{
+        month:"short",
+        year:"2-digit"
+    });
+}
+
+/* =================================
+   LOAD SUPABASE
+================================= */
+
+async function loadRecords(){
+    const tbody = document.getElementById("tableBody");
+
+    tbody.innerHTML = `
+        <tr><td colspan="11">
+            <div class="loading">
+                <div class="spinner"></div>
+                กำลังโหลดข้อมูล...
+            </div>
+        </td></tr>
+    `;
+
+    const {data,error} = await db
+        .from("spare_parts")
+        .select("*")
+        .order("created_at",{ascending:false});
+
+    if(error){
+        console.error(error);
+
+        tbody.innerHTML = `
+            <tr><td colspan="11">
+                <div class="empty">
+                    <strong>โหลดข้อมูลไม่สำเร็จ</strong>
+                    ${escapeHTML(error.message)}
+                </div>
+            </td></tr>
+        `;
+
+        showToast("โหลดข้อมูลไม่สำเร็จ");
+        return;
+    }
+
+    allRecords = data || [];
+
+    document.getElementById("lastUpdated").textContent =
+        "อัปเดตข้อมูลล่าสุด " + new Date().toLocaleString("th-TH");
+
+    refreshPeriod();
+}
+
+/* =================================
+   PERIOD FILTER
+================================= */
+
+function setPeriod(period){
+    activePeriod = period;
+
+    document.querySelectorAll(".period-btn").forEach(btn => {
+        btn.classList.toggle(
+            "active",
+            btn.dataset.period === period
+        );
+    });
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+
+    let from = null;
+    let to = new Date(today);
+
+    if(period === "today"){
+        from = new Date(today);
+    }
+
+    if(period === "7"){
+        from = new Date(today);
+        from.setDate(from.getDate()-6);
+    }
+
+    if(period === "30"){
+        from = new Date(today);
+        from.setDate(from.getDate()-29);
+    }
+
+    if(period === "month"){
+        from = startOfMonth(today);
+        to = endOfMonth(today);
+    }
+
+    if(period === "lastmonth"){
+        const last = new Date(today.getFullYear(),today.getMonth()-1,1);
+        from = startOfMonth(last);
+        to = endOfMonth(last);
+    }
+
+    if(period === "3"){
+        from = new Date(today.getFullYear(),today.getMonth()-2,1);
+    }
+
+    if(period === "6"){
+        from = new Date(today.getFullYear(),today.getMonth()-5,1);
+    }
+
+    if(period === "year"){
+        from = new Date(today.getFullYear(),0,1);
+    }
+
+    if(period === "all"){
+        from = null;
+        to = null;
+    }
+
+    rangeStart = from ? localISO(from) : "";
+    rangeEnd = to ? localISO(to) : "";
+
+    document.getElementById("dateFrom").value = rangeStart;
+    document.getElementById("dateTo").value = rangeEnd;
+
+    refreshPeriod();
+}
+
+function applyCustomDate(){
+    const from = document.getElementById("dateFrom").value;
+    const to = document.getElementById("dateTo").value;
+
+    if(from && to && from > to){
+        showToast("วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด");
+        return;
+    }
+
+    activePeriod = "custom";
+    rangeStart = from;
+    rangeEnd = to;
+
+    document.querySelectorAll(".period-btn").forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    refreshPeriod();
+}
+
+function resetPeriod(){
+    setPeriod("month");
+}
+
+function refreshPeriod(){
+    const from = rangeStart;
+    const to = rangeEnd;
+
+    periodRecords = allRecords.filter(row => {
+        const date = row.arrival_date || "";
+
+        if(from && (!date || date < from)) return false;
+        if(to && (!date || date > to)) return false;
+
+        return true;
+    });
+
+    let label = "ทั้งหมด";
+
+    if(activePeriod === "today") label = "วันนี้";
+    if(activePeriod === "7") label = "7 วันย้อนหลัง";
+    if(activePeriod === "30") label = "30 วันย้อนหลัง";
+    if(activePeriod === "month") label = "เดือนนี้";
+    if(activePeriod === "lastmonth") label = "เดือนก่อน";
+    if(activePeriod === "3") label = "3 เดือนย้อนหลัง";
+    if(activePeriod === "6") label = "6 เดือนย้อนหลัง";
+    if(activePeriod === "year") label = "ปีนี้";
+    if(activePeriod === "custom") label = "ช่วงวันที่กำหนด";
+
+    if(activePeriod === "custom"){
+        label += ` (${from || "ไม่กำหนด"} ถึง ${to || "ไม่กำหนด"})`;
+    }
+
+    document.getElementById("periodSummary").textContent =
+        "กำลังแสดง: " + label;
+
+    applySearch();
+}
+
+/* =================================
+   DASHBOARD
+================================= */
+
+function updateDashboard(){
+    const totalWithdraw = periodRecords.reduce(
+        (sum,row) => sum + Number(row.withdraw_qty || 0),0
+    );
+
+    const totalOrder = periodRecords.reduce(
+        (sum,row) => sum + Number(row.order_qty || 0),0
+    );
+
+    const uniqueParts = new Set(
+        periodRecords.map(row => row.part_no).filter(Boolean)
+    );
+
+    document.getElementById("totalRecords").textContent =
+        numberFormat(periodRecords.length);
+
+    document.getElementById("totalParts").textContent =
+        numberFormat(uniqueParts.size);
+
+    document.getElementById("totalWithdraw").textContent =
+        numberFormat(totalWithdraw);
+
+    document.getElementById("totalOrder").textContent =
+        numberFormat(totalOrder);
+}
+
+/* =================================
+   CHART DATA
+================================= */
+
+function getChartMonthlyData(){
+    const now = new Date();
+    let startDate;
+
+    if(rangeStart){
+        startDate = parseLocalDate(rangeStart);
+    }else if(periodRecords.length){
+        const dates = periodRecords
+            .map(r => parseLocalDate(r.arrival_date))
+            .filter(Boolean)
+            .sort((a,b) => a-b);
+
+        startDate = dates[0] || new Date(now.getFullYear(),now.getMonth()-5,1);
+    }else{
+        startDate = new Date(now.getFullYear(),now.getMonth()-5,1);
+    }
+
+    const endDate = rangeEnd
+        ? parseLocalDate(rangeEnd)
+        : new Date(now.getFullYear(),now.getMonth(),1);
+
+    const start = new Date(startDate.getFullYear(),startDate.getMonth(),1);
+    const end = new Date(endDate.getFullYear(),endDate.getMonth(),1);
+
+    const months = [];
+    let cursor = new Date(start);
+
+    while(cursor <= end && months.length < 60){
+        months.push({
+            key: `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,"0")}`,
+            label:monthLabel(cursor),
+            withdraw:0,
+            order:0,
+            records:0
+        });
+
+        cursor.setMonth(cursor.getMonth()+1);
+    }
+
+    const lookup = new Map(months.map(m => [m.key,m]));
+
+    periodRecords.forEach(row => {
+        if(!row.arrival_date) return;
+
+        const key = String(row.arrival_date).slice(0,7);
+        const item = lookup.get(key);
+
+        if(!item) return;
+
+        item.withdraw += Number(row.withdraw_qty || 0);
+        item.order += Number(row.order_qty || 0);
+        item.records += 1;
+    });
+
+    return months;
+}
+
+function renderCharts(){
+    if(!window.Chart){
+        showToast("โหลดระบบกราฟไม่สำเร็จ");
+        return;
+    }
+
+    const months = getChartMonthlyData();
+
+    const labels = months.map(m => m.label);
+    const withdraw = months.map(m => m.withdraw);
+    const order = months.map(m => m.order);
+    const records = months.map(m => m.records);
+
+    const commonOptions = {
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{
+            intersect:false,
+            mode:"index"
+        },
+        plugins:{
+            legend:{
+                position:"bottom",
+                labels:{
+                    usePointStyle:true,
+                    boxWidth:7,
+                    padding:18,
+                    font:{size:10}
+                }
+            }
+        },
+        scales:{
+            x:{
+                grid:{display:false},
+                ticks:{
+                    color:"#8291a1",
+                    font:{size:10}
+                }
+            },
+            y:{
+                beginAtZero:true,
+                grid:{color:"#edf1f5"},
+                ticks:{
+                    precision:0,
+                    color:"#8291a1",
+                    font:{size:10}
+                }
+            }
+        }
+    };
+
+    if(monthlyChart) monthlyChart.destroy();
+
+    monthlyChart = new Chart(
+        document.getElementById("monthlyChart"),
+        {
+            type:"bar",
+            data:{
+                labels,
+                datasets:[
+                    {
+                        label:"จำนวนเบิก",
+                        data:withdraw,
+                        backgroundColor:"#347fbd",
+                        borderRadius:5,
+                        maxBarThickness:28
+                    },
+                    {
+                        label:"จำนวนสั่งทำ",
+                        data:order,
+                        backgroundColor:"#e5a34c",
+                        borderRadius:5,
+                        maxBarThickness:28
+                    }
+                ]
+            },
+            options:{
+                ...commonOptions,
+                scales:{
+                    ...commonOptions.scales,
+                    x:{
+                        ...commonOptions.scales.x,
+                        stacked:false
+                    }
+                }
+            }
+        }
+    );
+
+    if(trendChart) trendChart.destroy();
+
+    trendChart = new Chart(
+        document.getElementById("trendChart"),
+        {
+            type:"line",
+            data:{
+                labels,
+                datasets:[
+                    {
+                        label:"จำนวนรายการ",
+                        data:records,
+                        borderColor:"#15966a",
+                        backgroundColor:"rgba(21,150,106,.10)",
+                        fill:true,
+                        tension:.35,
+                        pointRadius:4,
+                        pointHoverRadius:6,
+                        pointBackgroundColor:"#15966a"
+                    }
+                ]
+            },
+            options:{
+                ...commonOptions,
+                plugins:{
+                    ...commonOptions.plugins,
+                    legend:{
+                        display:false
+                    }
+                }
+            }
+        }
+    );
+}
+
+/* =================================
+   SEARCH
+================================= */
+
+function applySearch(){
+    const keyword = document.getElementById("searchInput")
+        .value.trim().toLowerCase();
+
+    filteredRecords = periodRecords.filter(row => {
+        const searchable = [
+            row.part_no,
+            row.step,
+            row.customer,
+            row.part_name,
+            row.part_code,
+            row.remark
+        ].join(" ").toLowerCase();
+
+        return !keyword || searchable.includes(keyword);
+    });
+
+    currentPage = 1;
+
+    updateDashboard();
+    renderCharts();
+    renderTable();
+}
+
+/* =================================
+   TABLE
+================================= */
+
+function renderTable(){
+    const tbody = document.getElementById("tableBody");
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filteredRecords.length/pageSize)
+    );
+
+    if(currentPage > totalPages) currentPage = totalPages;
+
+    const start = (currentPage-1)*pageSize;
+    const rows = filteredRecords.slice(start,start+pageSize);
+
+    if(!rows.length){
+        tbody.innerHTML = `
+            <tr><td colspan="11">
+                <div class="empty">
+                    <strong>ไม่พบข้อมูล</strong>
+                    ไม่มีรายการในช่วงเวลาหรือคำค้นหานี้
+                </div>
+            </td></tr>
+        `;
+    }else{
+        tbody.innerHTML = rows.map((row,index) => {
+            const realIndex = start+index;
+
+            return `
+                <tr>
+                    <td>${realIndex+1}</td>
+                    <td class="part-no">${escapeHTML(row.part_no || "-")}</td>
+                    <td>${escapeHTML(row.step || "-")}</td>
+                    <td>${escapeHTML(row.customer || "-")}</td>
+                    <td>${escapeHTML(row.part_name || "-")}</td>
+                    <td>${escapeHTML(row.part_code || "-")}</td>
+                    <td class="qty">${numberFormat(row.withdraw_qty)}</td>
+                    <td class="qty">${numberFormat(row.order_qty)}</td>
+                    <td>${formatDate(row.arrival_date)}</td>
+                    <td class="remark" title="${escapeHTML(row.remark || "")}">
+                        ${escapeHTML(row.remark || "-")}
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-blue btn-sm"
+                                onclick="openDetail(${realIndex})">
+                                รายละเอียด
+                            </button>
+                            <button class="btn btn-red btn-sm"
+                                onclick="deleteRecord(${realIndex})">
+                                ลบ
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    const from = filteredRecords.length ? start+1 : 0;
+    const to = Math.min(start+pageSize,filteredRecords.length);
+
+    document.getElementById("pageInfo").textContent =
+        `แสดง ${from}-${to} จาก ${filteredRecords.length} รายการ`;
+
+    renderPagination(totalPages);
+}
+
+function renderPagination(totalPages){
+    const el = document.getElementById("pagination");
+
+    let html = `
+        <button onclick="goPage(${currentPage-1})"
+            ${currentPage<=1?"disabled":""}>‹</button>
+    `;
+
+    let pages = [];
+
+    if(totalPages <= 5){
+        for(let i=1;i<=totalPages;i++) pages.push(i);
+    }else{
+        let start = Math.max(1,currentPage-2);
+        let end = Math.min(totalPages,start+4);
+
+        if(end-start<4) start = Math.max(1,end-4);
+
+        for(let i=start;i<=end;i++) pages.push(i);
+    }
+
+    pages.forEach(p => {
+        html += `
+            <button class="${p===currentPage?"active":""}"
+                onclick="goPage(${p})">${p}</button>
+        `;
+    });
+
+    html += `
+        <button onclick="goPage(${currentPage+1})"
+            ${currentPage>=totalPages?"disabled":""}>›</button>
+    `;
+
+    el.innerHTML = html;
+}
+
+function goPage(page){
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filteredRecords.length/pageSize)
+    );
+
+    if(page<1 || page>totalPages) return;
+
+    currentPage = page;
+    renderTable();
+}
+
+function changePageSize(){
+    pageSize = Number(document.getElementById("pageSize").value);
+    currentPage = 1;
+    renderTable();
+}
+
+/* =================================
+   DETAIL
+================================= */
+
+function openDetail(index){
+    const row = filteredRecords[index];
+    if(!row) return;
+
+    selectedRecord = row;
+
+    document.getElementById("detailContent").innerHTML = `
+        <div class="detail-banner">
+            <small>PART NUMBER</small>
+            <h2>${escapeHTML(row.part_no || "-")}</h2>
+        </div>
+
+        <div class="detail-grid">
+            <div class="detail-item">
+                <label>PART NO</label>
+                <div>${escapeHTML(row.part_no || "-")}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>PROCESS / STEP</label>
+                <div>${escapeHTML(row.step || "-")}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>CUSTOMER</label>
+                <div>${escapeHTML(row.customer || "-")}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>ชื่ออะไหล่</label>
+                <div>${escapeHTML(row.part_name || "-")}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>ขนาด / CODE อะไหล่</label>
+                <div>${escapeHTML(row.part_code || "-")}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>วันที่อะไหล่เข้า</label>
+                <div>${formatDate(row.arrival_date)}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>จำนวนเบิก</label>
+                <div>${numberFormat(row.withdraw_qty)}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>จำนวนสั่งทำ</label>
+                <div>${numberFormat(row.order_qty)}</div>
+            </div>
+
+            <div class="detail-item full">
+                <label>REMARK / ชื่อผู้เบิก</label>
+                <div>${escapeHTML(row.remark || "-")}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>วันที่บันทึก</label>
+                <div>${row.created_at ? new Date(row.created_at).toLocaleString("th-TH") : "-"}</div>
+            </div>
+
+            <div class="detail-item">
+                <label>Record ID</label>
+                <div>${escapeHTML(row.id ?? "-")}</div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("detailModal").classList.add("show");
+}
+
+function closeDetail(){
+    document.getElementById("detailModal").classList.remove("show");
+}
+
+function closeModalOutside(event){
+    if(event.target.id==="detailModal") closeDetail();
+}
+
+/* =================================
+   PRINT
+================================= */
+
+function printDetail(){
+    if(!selectedRecord){
+        showToast("ไม่พบรายการที่ต้องการพิมพ์");
+        return;
+    }
+
+    const row = selectedRecord;
+
+    const fields = [
+        ["PART NO",row.part_no],
+        ["PROCESS / STEP",row.step],
+        ["CUSTOMER",row.customer],
+        ["ชื่ออะไหล่",row.part_name],
+        ["ขนาด / CODE อะไหล่",row.part_code],
+        ["จำนวนเบิก",numberFormat(row.withdraw_qty)],
+        ["จำนวนสั่งทำ",numberFormat(row.order_qty)],
+        ["วันที่อะไหล่เข้า",formatDate(row.arrival_date)],
+        ["REMARK / ชื่อผู้เบิก",row.remark],
+        ["วันที่บันทึก",row.created_at ? new Date(row.created_at).toLocaleString("th-TH") : "-"],
+        ["Record ID",row.id]
+    ];
+
+    const printWindow = window.open("","_blank","width=900,height=750");
+
+    if(!printWindow){
+        showToast("กรุณาอนุญาต Pop-up เพื่อพิมพ์");
+        return;
+    }
+
+    const rows = fields.map(([label,value]) => `
+        <tr>
+            <th>${escapeHTML(label)}</th>
+            <td>${escapeHTML(value ?? "-")}</td>
+        </tr>
+    `).join("");
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="th">
+        <head>
+            <meta charset="UTF-8">
+            <title>Spare Parts Record</title>
+            <style>
+                *{box-sizing:border-box}
+                body{
+                    font-family:"Segoe UI",Tahoma,sans-serif;
+                    color:#243447;
+                    margin:35px;
+                }
+                .header{
+                    border-bottom:3px solid #173653;
+                    padding-bottom:16px;
+                    margin-bottom:25px;
+                }
+                .header h1{
+                    font-size:21px;
+                    color:#173653;
+                    margin:0;
+                }
+                .header p{
+                    color:#718096;
+                    margin:6px 0 0;
+                    font-size:12px;
+                }
+                h2{
+                    font-size:19px;
+                    margin:0 0 15px;
+                    color:#173653;
+                }
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+                th,td{
+                    border:1px solid #d7e0e8;
+                    padding:12px 14px;
+                    text-align:left;
+                    font-size:13px;
+                }
+                th{
+                    width:35%;
+                    background:#f1f5f9;
+                    color:#40566b;
+                }
+                .footer{
+                    margin-top:35px;
+                    display:flex;
+                    justify-content:space-between;
+                    color:#718096;
+                    font-size:11px;
+                }
+                @page{size:A4;margin:15mm}
+                @media print{body{margin:0}}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>TNC | SPARE PARTS MANAGEMENT</h1>
+                <p>SPARE PARTS TRANSACTION RECORD</p>
+            </div>
+
+            <h2>รายละเอียดรายการอะไหล่</h2>
+
+            <table>${rows}</table>
+
+            <div class="footer">
+                <span>TNC - Spare Parts Management</span>
+                <span>พิมพ์เมื่อ ${new Date().toLocaleString("th-TH")}</span>
+            </div>
+
+            <script>
+                window.onload = function(){
+                    window.print();
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+}
+
+/* =================================
+   DELETE
+================================= */
+
+async function deleteRecord(index){
+    const row = filteredRecords[index];
+    if(!row) return;
+
+    if(!confirm(
+        `ยืนยันลบรายการ PART NO: ${row.part_no} ?\n\nข้อมูลจะถูกลบออกจากระบบ`
+    )) return;
+
+    const {error} = await db
+        .from("spare_parts")
+        .delete()
+        .eq("id",row.id);
+
+    if(error){
+        console.error(error);
+        showToast("ลบข้อมูลไม่สำเร็จ: "+error.message);
+        return;
+    }
+
+    showToast("ลบข้อมูลเรียบร้อยแล้ว");
+    await loadRecords();
+}
+
+/* =================================
+   EXPORT EXCEL
+================================= */
+
+function exportExcel(){
+    if(!window.XLSX){
+        showToast("ระบบ Excel โหลดไม่สำเร็จ");
+        return;
+    }
+
+    if(!filteredRecords.length){
+        showToast("ไม่มีข้อมูลสำหรับส่งออก");
+        return;
+    }
+
+    const data = filteredRecords.map((row,index) => ({
+        "ลำดับ":index+1,
+        "PART NO":row.part_no || "",
+        "PROCESS":row.step || "",
+        "CUSTOMER":row.customer || "",
+        "ชื่ออะไหล่":row.part_name || "",
+        "ขนาด / CODE":row.part_code || "",
+        "จำนวนเบิก":Number(row.withdraw_qty || 0),
+        "จำนวนสั่งทำ":Number(row.order_qty || 0),
+        "วันที่อะไหล่เข้า":formatDate(row.arrival_date),
+        "REMARK / ผู้เบิก":row.remark || "",
+        "วันที่บันทึก":row.created_at
+            ? new Date(row.created_at).toLocaleString("th-TH")
+            : ""
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+
+    worksheet["!cols"] = [
+        {wch:8},
+        {wch:18},
+        {wch:15},
+        {wch:20},
+        {wch:25},
+        {wch:20},
+        {wch:13},
+        {wch:13},
+        {wch:17},
+        {wch:24},
+        {wch:23}
+    ];
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "Spare Parts History"
+    );
+
+    const now = new Date();
+
+    const dateName =
+        now.getFullYear()+
+        String(now.getMonth()+1).padStart(2,"0")+
+        String(now.getDate()).padStart(2,"0");
+
+    XLSX.writeFile(
+        workbook,
+        `TNC_Spare_Parts_History_${dateName}.xlsx`
+    );
+
+    showToast("ส่งออก Excel เรียบร้อยแล้ว");
+}
+
+/* =================================
+   INIT
+================================= */
+
+document.getElementById("searchInput").addEventListener("keydown",event => {
+    if(event.key==="Escape"){
+        event.target.value="";
+        applySearch();
+    }
+});
+
+loadRecords().then(() => {
+    setPeriod("month");
+});
+
+</script>
+
+</body>
+</html>
