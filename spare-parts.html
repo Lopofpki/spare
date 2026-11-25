@@ -1,0 +1,729 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spare Parts Management | TNC</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+--navy:#183653;--blue:#2878bd;--bg:#f3f6fa;
+--line:#dce4ed;--text:#26384a;--green:#16865b;--red:#d94343;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Tahoma,sans-serif}
+.header{background:linear-gradient(120deg,#183653,#244d70);color:white;padding:25px}
+.header-inner,.container{max-width:1500px;margin:auto}
+.header h1{margin:0;font-size:24px}
+.header p{margin:8px 0 0;color:#d6e5f2;font-size:13px}
+.container{padding:25px 18px 40px}
+.panel,.stat{background:white;border:1px solid var(--line);border-radius:11px;box-shadow:0 4px 18px #1836530b;margin-bottom:20px}
+.panel-title{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panel-title h2{margin:0;font-size:17px;color:var(--navy)}
+.panel-body{padding:20px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.stat{padding:16px 18px;margin:0}
+.stat span{font-size:12px;color:#718096}
+.stat strong{display:block;font-size:23px;color:var(--navy);margin-top:7px}
+label{display:block;font-size:12px;font-weight:bold;color:#536579;margin-bottom:7px}
+input,select{
+width:100%;border:1px solid #ccd7e2;border-radius:7px;
+padding:10px;font-size:13px;color:var(--text);background:white;outline:none;
+}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2878bd18}
+input[readonly]{background:#f0f5fa}
+.field{margin-bottom:15px}
+.part-picker{position:relative}
+.dropdown{
+display:none;position:absolute;top:100%;left:0;right:0;max-height:250px;
+overflow:auto;background:white;border:1px solid var(--line);border-radius:8px;
+box-shadow:0 8px 24px #0002;z-index:20
+}
+.dropdown.show{display:block}
+.part-option{padding:11px;border-bottom:1px solid #edf1f5;cursor:pointer;font-size:13px}
+.part-option:hover{background:#eaf3fc}
+.part-option small{display:block;color:#718096;margin-top:4px}
+.selected-area{padding:13px;background:#f7f9fc;border:1px dashed #cbd7e4;border-radius:8px}
+.selected-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;font-weight:bold}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#e8f2fc;color:#245b89;border:1px solid #c8def1;padding:7px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+.chip button{border:0;background:none;color:#b33;cursor:pointer;font-size:17px;margin-left:6px}
+.picker-date-row{
+display:grid;
+grid-template-columns:minmax(0,1fr) 300px;
+gap:16px;
+align-items:start;
+}
+.date-box{width:100%;margin:0}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1150px}
+th{background:#edf3f8;color:#425b72;font-size:12px;text-align:left;padding:12px 9px;white-space:nowrap}
+td{padding:8px;border-bottom:1px solid #e9eef3;font-size:12px;vertical-align:middle}
+td select,td input{min-width:110px;padding:9px;font-size:12px}
+td .auto{background:#f1f5f9}
+td .partno{font-weight:bold;color:var(--navy);min-width:125px}
+td .remark-input{min-width:145px}
+.btn{border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-weight:bold;font-size:13px}
+.btn-primary{background:var(--blue);color:white}
+.btn-success{background:var(--green);color:white}
+.btn-secondary{background:#e8edf3;color:#40546a}
+.btn-danger{background:#fff0f0;color:var(--red)}
+.btn-small{padding:7px 10px;font-size:11px}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:17px}
+.status{display:none;padding:12px 15px;border-radius:7px;font-size:13px;margin-bottom:15px}
+.status.success{display:block;background:#e8f7ef;color:#147747}
+.status.error{display:block;background:#fff0f0;color:#b83232}
+.status.info{display:block;background:#eaf3fc;color:#245b89}
+.search-row{max-width:450px;margin-bottom:15px}
+.search-row input{width:100%}
+.loading{text-align:center;padding:20px;color:#718096}
+.empty{color:#9aa7b5;font-size:12px}
+
+@media(max-width:700px){
+.stats{grid-template-columns:1fr}
+.container{padding:15px 10px}
+.panel-body{padding:14px}
+.header{padding:20px}
+.picker-date-row{grid-template-columns:1fr;gap:14px}
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+<div class="header-inner">
+<h1>SPARE PARTS MANAGEMENT</h1>
+<p>TNC | ระบบจัดการอะไหล่และติดตามการเบิก / สั่งทำ</p>
+</div>
+</header>
+
+<main class="container">
+
+<div id="status" class="status"></div>
+
+<div class="stats">
+<div class="stat">
+<span>จำนวนรายการทั้งหมด</span>
+<strong id="totalRecords">0</strong>
+</div>
+<div class="stat">
+<span>จำนวน PART ที่เลือก</span>
+<strong id="selectedCount">0</strong>
+</div>
+<div class="stat">
+<span>วันที่อะไหล่เข้า</span>
+<strong id="selectedDateText">-</strong>
+</div>
+</div>
+
+<section class="panel">
+<div class="panel-title">
+<h2>01 | เลือก PART NO</h2>
+<span id="partLoading" style="font-size:12px;color:#718096">กำลังโหลด PART...</span>
+</div>
+
+<div class="panel-body">
+
+<div class="picker-date-row">
+<div class="field">
+<label>ค้นหา PART NO / CUSTOMER / PROCESS</label>
+<div class="part-picker">
+<input id="partSearch" placeholder="พิมพ์ PART NO เพื่อค้นหา..." autocomplete="off">
+<div id="partDropdown" class="dropdown"></div>
+</div>
+</div>
+
+<div class="date-box">
+<label>วันที่อะไหล่เข้า <span style="color:red">*</span></label>
+<input type="date" id="arrivalDate">
+<small style="color:#718096">ใช้วันที่เดียวกันกับ PART ทุกรายการ</small>
+</div>
+</div>
+
+<div class="selected-area">
+<div class="selected-head">
+<span>PART ที่เลือกไว้</span>
+<button class="btn btn-danger btn-small" onclick="clearSelected()">ล้างทั้งหมด</button>
+</div>
+<div id="selectedParts" class="chips">
+<span class="empty">ยังไม่ได้เลือก PART NO</span>
+</div>
+</div>
+
+</div>
+</section>
+
+<section class="panel">
+<div class="panel-title">
+<h2>02 | รายละเอียดอะไหล่แต่ละ PART</h2>
+<span style="font-size:12px;color:#718096">เลือกข้อมูลแยกแต่ละ PART</span>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>PART NO</th>
+<th>CUSTOMER</th>
+<th>PROCESS</th>
+<th>ชื่ออะไหล่</th>
+<th>ขนาด / CODE</th>
+<th>เบิก (จำนวน)</th>
+<th>สั่งทำ (จำนวน)</th>
+<th>REMARK (ชื่อคนเบิก)</th>
+<th>ลบ</th>
+</tr>
+</thead>
+<tbody id="detailBody">
+<tr>
+<td colspan="9" class="loading">กรุณาเลือก PART NO ด้านบน</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel-body">
+<div class="actions">
+<span style="font-size:12px;color:#718096">
+จำนวนรายการ: <b id="rowCount">0</b> PART
+</span>
+<div style="display:flex;gap:8px">
+<button class="btn btn-secondary" onclick="clearForm()">ล้างฟอร์ม</button>
+<button class="btn btn-success" id="saveBtn" onclick="saveAll()">บันทึกข้อมูลทั้งหมด</button>
+</div>
+</div>
+</div>
+</section>
+
+<section class="panel">
+<div class="panel-title">
+<h2>03 | รายการอะไหล่ที่บันทึกแล้ว</h2>
+<button class="btn btn-secondary btn-small" onclick="loadRecords()">รีเฟรช</button>
+</div>
+
+<div class="panel-body">
+<div class="search-row">
+<input id="recordSearch" placeholder="ค้นหา PART / ชื่ออะไหล่ / CUSTOMER..." oninput="renderRecords()">
+</div>
+
+<div class="table-wrap">
+<table style="min-width:1000px">
+<thead>
+<tr>
+<th>PART NO</th>
+<th>CUSTOMER</th>
+<th>PROCESS</th>
+<th>ชื่ออะไหล่</th>
+<th>ขนาด / CODE</th>
+<th>เบิก</th>
+<th>สั่งทำ</th>
+<th>วันที่เข้า</th>
+<th>REMARK</th>
+<th>จัดการ</th>
+</tr>
+</thead>
+<tbody id="recordBody">
+<tr><td colspan="10" class="loading">กำลังโหลด...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+</main>
+
+<script>
+/* ==========================================
+   1. ตั้งค่ารายการ Dropdown ตรงนี้
+========================================== */
+
+const OPTIONS = {
+    partName: [
+        "อะไหล่ตัวอย่าง 1",
+        "อะไหล่ตัวอย่าง 2",
+        "อะไหล่ตัวอย่าง 3"
+    ],
+
+    partCode: [
+        "CODE ตัวอย่าง 1",
+        "CODE ตัวอย่าง 2",
+        "CODE ตัวอย่าง 3"
+    ],
+
+    withdrawQty: [
+        "0","1","2","3","4","5","10","20"
+    ],
+
+    orderQty: [
+        "0","1","2","3","4","5","10","20"
+    ]
+};
+
+/* ==========================================
+   2. SUPABASE CONFIG
+========================================== */
+
+const SUPABASE_URL = "https://enmzfxdswzhatvcenrds.supabase.co";
+const SUPABASE_KEY = "sb_publishable_DkoWB0IDDgodellT5vgcLQ_YdqIhKdI";
+
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let allParts = [];
+let selectedParts = [];
+let allRecords = [];
+
+/* ใช้ ID แยกแต่ละแถว เพื่อให้ PART NO ซ้ำกันได้ */
+let nextItemId = 1;
+
+/* ==========================================
+   HELPERS
+========================================== */
+
+function getValue(row,keys){
+    for(const key of keys){
+        if(row[key] !== undefined && row[key] !== null)
+            return String(row[key]).trim();
+    }
+    return "";
+}
+
+function getPartNumber(row){
+    return getValue(row,["part_no","PART_NO","partNo","part_number"]);
+}
+
+function getCustomer(row){
+    return getValue(row,["customer","CUSTOMER","customer_name","customerName","cust_name"]);
+}
+
+function getProcess(row){
+    return getValue(row,["process","PROCESS","Process"]);
+}
+
+function escapeHTML(value){
+    return String(value ?? "").replace(/[&<>"']/g,c=>({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    })[c]);
+}
+
+function showStatus(message,type="success"){
+    const el=document.getElementById("status");
+    el.className="status "+type;
+    el.textContent=message;
+    window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function hideStatus(){
+    const el=document.getElementById("status");
+    el.className="status";
+    el.textContent="";
+}
+
+function formatDate(date){
+    if(!date)return "-";
+    const p=String(date).slice(0,10).split("-");
+    return p.length===3 ? `${p[2]}/${p[1]}/${p[0].slice(2)}` : date;
+}
+
+function makeSelect(options,value,index,key,placeholder){
+    const list=[...options];
+    if(value && !list.includes(String(value)))list.unshift(String(value));
+
+    return `
+    <select onchange="updateItem(${index},'${key}',this.value)">
+        <option value="">${placeholder}</option>
+        ${list.map(option=>`
+            <option value="${escapeHTML(option)}"
+            ${String(value)===String(option)?"selected":""}>
+            ${escapeHTML(option)}
+            </option>
+        `).join("")}
+    </select>`;
+}
+
+/* ==========================================
+   LOAD PART DATABASE
+========================================== */
+
+async function loadParts(){
+    const label=document.getElementById("partLoading");
+
+    try{
+        const {data,error}=await db.from("part_database")
+            .select("*").order("part_no",{ascending:true});
+
+        if(error)throw error;
+
+        allParts=(data||[]).filter(row=>getPartNumber(row));
+        label.textContent=`โหลด PART แล้ว ${allParts.length} รายการ`;
+
+    }catch(error){
+        label.textContent="โหลด PART ไม่สำเร็จ";
+        showStatus("โหลด PART ไม่สำเร็จ: "+error.message,"error");
+    }
+}
+
+/* ==========================================
+   SEARCH / SELECT PART
+========================================== */
+
+const partSearch=document.getElementById("partSearch");
+const dropdown=document.getElementById("partDropdown");
+
+partSearch.addEventListener("input",renderDropdown);
+partSearch.addEventListener("focus",renderDropdown);
+
+document.addEventListener("click",event=>{
+    if(!event.target.closest(".part-picker"))
+        dropdown.classList.remove("show");
+});
+
+function renderDropdown(){
+    const keyword=partSearch.value.trim().toLowerCase();
+
+    /* ไม่ตัด PART ที่เคยเลือกแล้วออก
+       จึงสามารถเลือก PART NO เดิมซ้ำได้ */
+    const filtered=allParts.filter(part=>{
+        const no=getPartNumber(part);
+        const text=`${no} ${getCustomer(part)} ${getProcess(part)}`.toLowerCase();
+        return text.includes(keyword);
+    }).slice(0,100);
+
+    dropdown.innerHTML="";
+
+    if(!filtered.length){
+        dropdown.innerHTML='<div class="part-option">ไม่พบ PART ที่ค้นหา</div>';
+    }else{
+        filtered.forEach(part=>{
+            const option=document.createElement("div");
+            option.className="part-option";
+            option.innerHTML=`
+                <b>${escapeHTML(getPartNumber(part))}</b>
+                <small>CUSTOMER: ${escapeHTML(getCustomer(part)||"-")}
+                | PROCESS: ${escapeHTML(getProcess(part)||"-")}</small>`;
+            option.onclick=()=>addPart(part);
+            dropdown.appendChild(option);
+        });
+    }
+
+    dropdown.classList.add("show");
+}
+
+function addPart(part){
+    const no=getPartNumber(part);
+
+    if(!no)return;
+
+    /* ทุกครั้งที่เลือก จะสร้างรายการใหม่
+       แม้จะเป็น PART NO เดิมก็ตาม */
+    selectedParts.push({
+        _id:nextItemId++,
+        part_no:no,
+        customer:getCustomer(part),
+        process:getProcess(part),
+        part_name:"",
+        part_code:"",
+        withdraw_qty:"",
+        order_qty:"",
+        remark:""
+    });
+
+    partSearch.value="";
+    dropdown.classList.remove("show");
+
+    renderSelected();
+    renderDetails();
+    updateStats();
+}
+
+/* ลบเฉพาะแถวที่กด ไม่ลบ PART NO เดียวกันทั้งหมด */
+function removePart(id){
+    selectedParts=selectedParts.filter(x=>x._id!==id);
+    renderSelected();
+    renderDetails();
+    updateStats();
+}
+
+function clearSelected(){
+    if(!selectedParts.length)return;
+    if(!confirm("ล้าง PART ที่เลือกทั้งหมดหรือไม่?"))return;
+
+    selectedParts=[];
+    renderSelected();
+    renderDetails();
+    updateStats();
+}
+
+function renderSelected(){
+    const box=document.getElementById("selectedParts");
+
+    if(!selectedParts.length){
+        box.innerHTML='<span class="empty">ยังไม่ได้เลือก PART NO</span>';
+        return;
+    }
+
+    box.innerHTML=selectedParts.map(x=>`
+        <span class="chip">
+            ${escapeHTML(x.part_no)}
+            <button onclick="removePart(${x._id})" title="ลบรายการนี้">×</button>
+        </span>
+    `).join("");
+}
+
+/* ==========================================
+   DETAIL TABLE
+========================================== */
+
+function renderDetails(){
+    const tbody=document.getElementById("detailBody");
+
+    if(!selectedParts.length){
+        tbody.innerHTML='<tr><td colspan="9" class="loading">กรุณาเลือก PART NO ด้านบน</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML=selectedParts.map((item,i)=>`
+        <tr>
+            <td><input class="partno" readonly value="${escapeHTML(item.part_no)}"></td>
+            <td><input class="auto" readonly value="${escapeHTML(item.customer)}"></td>
+            <td><input class="auto" readonly value="${escapeHTML(item.process)}"></td>
+
+            <td>${makeSelect(OPTIONS.partName,item.part_name,i,"part_name","เลือกชื่ออะไหล่")}</td>
+
+            <td>${makeSelect(OPTIONS.partCode,item.part_code,i,"part_code","เลือกขนาด/CODE")}</td>
+
+            <td>${makeSelect(OPTIONS.withdrawQty,item.withdraw_qty,i,"withdraw_qty","เลือกจำนวน")}</td>
+
+            <td>${makeSelect(OPTIONS.orderQty,item.order_qty,i,"order_qty","เลือกจำนวน")}</td>
+
+            <td>
+                <input
+                    class="remark-input"
+                    type="text"
+                    value="${escapeHTML(item.remark)}"
+                    placeholder="ชื่อคนเบิก"
+                    oninput="updateItem(${i},'remark',this.value)"
+                >
+            </td>
+
+            <td>
+                <button class="btn btn-danger btn-small"
+                    onclick="removePart(${item._id})">ลบ</button>
+            </td>
+        </tr>
+    `).join("");
+
+    document.getElementById("rowCount").textContent=selectedParts.length;
+}
+
+function updateItem(index,key,value){
+    if(selectedParts[index]){
+        selectedParts[index][key]=value;
+    }
+}
+
+/* ==========================================
+   DATE
+========================================== */
+
+const arrivalDate=document.getElementById("arrivalDate");
+
+function setToday(){
+    const now=new Date();
+    const local=new Date(now.getTime()-now.getTimezoneOffset()*60000);
+    arrivalDate.value=local.toISOString().slice(0,10);
+}
+
+arrivalDate.addEventListener("change",updateStats);
+
+/* ==========================================
+   SAVE ALL
+========================================== */
+
+async function saveAll(){
+    hideStatus();
+
+    if(!selectedParts.length){
+        showStatus("กรุณาเลือก PART NO อย่างน้อย 1 รายการ","error");
+        return;
+    }
+
+    if(!arrivalDate.value){
+        showStatus("กรุณาเลือกวันที่อะไหล่เข้า","error");
+        return;
+    }
+
+    for(const item of selectedParts){
+        if(!item.part_name){
+            showStatus(`กรุณาเลือกชื่ออะไหล่ของ PART ${item.part_no}`,"error");
+            return;
+        }
+
+        if(!item.part_code){
+            showStatus(`กรุณาเลือกขนาด/CODE ของ PART ${item.part_no}`,"error");
+            return;
+        }
+
+        if(item.withdraw_qty==="" || item.order_qty===""){
+            showStatus(`กรุณาเลือกจำนวนเบิกและจำนวนสั่งทำของ PART ${item.part_no}`,"error");
+            return;
+        }
+
+        // REMARK เป็นชื่อคนเบิก พิมพ์เองได้ ไม่บังคับกรอก
+    }
+
+    const payload=selectedParts.map(item=>({
+        part_no:item.part_no,
+        step:item.process || null,
+        customer:item.customer || null,
+        part_name:item.part_name,
+        part_code:item.part_code,
+        withdraw_qty:Number(item.withdraw_qty),
+        order_qty:Number(item.order_qty),
+        arrival_date:arrivalDate.value,
+        remark:item.remark.trim() || null
+    }));
+
+    const btn=document.getElementById("saveBtn");
+    btn.disabled=true;
+    btn.textContent="กำลังบันทึก...";
+
+    try{
+        const {error}=await db.from("spare_parts").insert(payload);
+        if(error)throw error;
+
+        showStatus(`บันทึกสำเร็จ ${payload.length} รายการ`,"success");
+
+        selectedParts=[];
+        partSearch.value="";
+
+        renderSelected();
+        renderDetails();
+        updateStats();
+
+        await loadRecords();
+
+    }catch(error){
+        console.error(error);
+        showStatus("บันทึกไม่สำเร็จ: "+error.message,"error");
+    }finally{
+        btn.disabled=false;
+        btn.textContent="บันทึกข้อมูลทั้งหมด";
+    }
+}
+
+/* ==========================================
+   CLEAR FORM
+========================================== */
+
+function clearForm(){
+    if(!confirm("ต้องการล้างข้อมูลในฟอร์มหรือไม่?"))return;
+
+    selectedParts=[];
+    partSearch.value="";
+
+    renderSelected();
+    renderDetails();
+    updateStats();
+    hideStatus();
+}
+
+/* ==========================================
+   RECORD HISTORY
+========================================== */
+
+async function loadRecords(){
+    const tbody=document.getElementById("recordBody");
+
+    try{
+        const {data,error}=await db.from("spare_parts")
+            .select("*").order("created_at",{ascending:false});
+
+        if(error)throw error;
+
+        allRecords=data||[];
+        renderRecords();
+        updateStats();
+
+    }catch(error){
+        tbody.innerHTML=`<tr><td colspan="10" class="loading">โหลดข้อมูลไม่สำเร็จ: ${escapeHTML(error.message)}</td></tr>`;
+    }
+}
+
+function renderRecords(){
+    const tbody=document.getElementById("recordBody");
+    const keyword=(document.getElementById("recordSearch").value||"").toLowerCase();
+
+    const rows=allRecords.filter(x=>
+        [x.part_no,x.customer,x.step,x.part_name,x.part_code,x.remark]
+        .join(" ").toLowerCase().includes(keyword)
+    );
+
+    if(!rows.length){
+        tbody.innerHTML='<tr><td colspan="10" class="loading">ไม่พบข้อมูล</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML=rows.map(x=>`
+        <tr>
+            <td><b>${escapeHTML(x.part_no)}</b></td>
+            <td>${escapeHTML(x.customer||"-")}</td>
+            <td>${escapeHTML(x.step||"-")}</td>
+            <td>${escapeHTML(x.part_name||"-")}</td>
+            <td>${escapeHTML(x.part_code||"-")}</td>
+            <td>${Number(x.withdraw_qty||0)}</td>
+            <td>${Number(x.order_qty||0)}</td>
+            <td>${formatDate(x.arrival_date)}</td>
+            <td>${escapeHTML(x.remark||"-")}</td>
+            <td>
+                <button class="btn btn-danger btn-small"
+                    onclick="deleteRecord(${Number(x.id)})">ลบ</button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+/* ==========================================
+   DELETE
+========================================== */
+
+async function deleteRecord(id){
+    if(!confirm("ยืนยันลบรายการนี้หรือไม่?"))return;
+
+    try{
+        const {error}=await db.from("spare_parts").delete().eq("id",id);
+        if(error)throw error;
+
+        showStatus("ลบข้อมูลเรียบร้อย","success");
+        await loadRecords();
+
+    }catch(error){
+        showStatus("ลบไม่สำเร็จ: "+error.message,"error");
+    }
+}
+
+/* ==========================================
+   DASHBOARD / START
+========================================== */
+
+function updateStats(){
+    document.getElementById("totalRecords").textContent=allRecords.length;
+    document.getElementById("selectedCount").textContent=selectedParts.length;
+    document.getElementById("rowCount").textContent=selectedParts.length;
+    document.getElementById("selectedDateText").textContent=
+        arrivalDate.value?formatDate(arrivalDate.value):"-";
+}
+
+async function init(){
+    setToday();
+    updateStats();
+    await Promise.all([loadParts(),loadRecords()]);
+}
+
+init();
+</script>
+
+</body>
+</html>
