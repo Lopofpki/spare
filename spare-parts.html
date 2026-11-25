@@ -16,11 +16,12 @@
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Tahoma,sans-serif}
 .header{background:linear-gradient(120deg,#183653,#244d70);color:white;padding:25px}
 .header-inner,.container{max-width:1500px;margin:auto}
+.header-inner{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
 .header h1{margin:0;font-size:24px}
 .header p{margin:8px 0 0;color:#d6e5f2;font-size:13px}
 .container{padding:25px 18px 40px}
 .panel,.stat{background:white;border:1px solid var(--line);border-radius:11px;box-shadow:0 4px 18px #1836530b;margin-bottom:20px}
-.panel-title{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.panel-title{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
 .panel-title h2{margin:0;font-size:17px;color:var(--navy)}
 .panel-body{padding:20px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
@@ -66,20 +67,17 @@ td .auto{background:#f1f5f9}
 td .partno{font-weight:bold;color:var(--navy);min-width:125px}
 td .remark-input{min-width:145px}
 .btn{border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-weight:bold;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-.btn-primary{background:var(--blue);color:white}
 .btn-success{background:var(--green);color:white}
 .btn-secondary{background:#e8edf3;color:#40546a}
 .btn-danger{background:#fff0f0;color:var(--red)}
-.btn-history{background:var(--navy);color:white}
-.btn-history:hover{background:#244d70}
+.btn-history{background:white;color:var(--navy);border:1px solid #ffffff66}
+.btn-history:hover{background:#eaf3fc}
 .btn-small{padding:7px 10px;font-size:11px}
 .actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:17px}
 .status{display:none;padding:12px 15px;border-radius:7px;font-size:13px;margin-bottom:15px}
 .status.success{display:block;background:#e8f7ef;color:#147747}
 .status.error{display:block;background:#fff0f0;color:#b83232}
 .status.info{display:block;background:#eaf3fc;color:#245b89}
-.search-row{max-width:450px;margin-bottom:15px}
-.search-row input{width:100%}
 .loading{text-align:center;padding:20px;color:#718096}
 .empty{color:#9aa7b5;font-size:12px}
 
@@ -89,6 +87,7 @@ td .remark-input{min-width:145px}
 .panel-body{padding:14px}
 .header{padding:20px}
 .picker-date-row{grid-template-columns:1fr;gap:14px}
+.header-inner{align-items:flex-start}
 }
 </style>
 </head>
@@ -97,8 +96,11 @@ td .remark-input{min-width:145px}
 
 <header class="header">
 <div class="header-inner">
+<div>
 <h1>SPARE PARTS MANAGEMENT</h1>
 <p>TNC | ระบบจัดการอะไหล่และติดตามการเบิก / สั่งทำ</p>
+</div>
+<a class="btn btn-history" href="spare-history.html">HISTORY ↗</a>
 </div>
 </header>
 
@@ -121,6 +123,7 @@ td .remark-input{min-width:145px}
 </div>
 </div>
 
+<!-- SECTION 01 -->
 <section class="panel">
 <div class="panel-title">
 <h2>01 | เลือก PART NO</h2>
@@ -158,6 +161,7 @@ td .remark-input{min-width:145px}
 </div>
 </section>
 
+<!-- SECTION 02 -->
 <section class="panel">
 <div class="panel-title">
 <h2>02 | รายละเอียดอะไหล่แต่ละ PART</h2>
@@ -192,48 +196,10 @@ td .remark-input{min-width:145px}
 <span style="font-size:12px;color:#718096">
 จำนวนรายการ: <b id="rowCount">0</b> PART
 </span>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div style="display:flex;gap:8px">
 <button class="btn btn-secondary" onclick="clearForm()">ล้างฟอร์ม</button>
 <button class="btn btn-success" id="saveBtn" onclick="saveAll()">บันทึกข้อมูลทั้งหมด</button>
 </div>
-</div>
-</div>
-</section>
-
-<section class="panel">
-<div class="panel-title">
-<h2>03 | รายการอะไหล่ที่บันทึกแล้ว</h2>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<a class="btn btn-history btn-small" href="spare-history.html">HISTORY ↗</a>
-<button class="btn btn-secondary btn-small" onclick="loadRecords()">รีเฟรช</button>
-</div>
-</div>
-
-<div class="panel-body">
-<div class="search-row">
-<input id="recordSearch" placeholder="ค้นหา PART / ชื่ออะไหล่ / CUSTOMER..." oninput="renderRecords()">
-</div>
-
-<div class="table-wrap">
-<table style="min-width:1000px">
-<thead>
-<tr>
-<th>PART NO</th>
-<th>CUSTOMER</th>
-<th>PROCESS</th>
-<th>ชื่ออะไหล่</th>
-<th>ขนาด / CODE</th>
-<th>เบิก</th>
-<th>สั่งทำ</th>
-<th>วันที่เข้า</th>
-<th>REMARK</th>
-<th>จัดการ</th>
-</tr>
-</thead>
-<tbody id="recordBody">
-<tr><td colspan="10" class="loading">กำลังโหลด...</td></tr>
-</tbody>
-</table>
 </div>
 </div>
 </section>
@@ -324,16 +290,11 @@ function hideStatus(){
     el.textContent="";
 }
 
-/* แสดงวันที่เป็น DD/MM/YY */
+/* แสดงวันที่ DD/MM/YY */
 function formatDate(date){
     if(!date)return "-";
-
-    const value=String(date).slice(0,10);
-    const p=value.split("-");
-
-    if(p.length!==3)return date;
-
-    return `${p[2]}/${p[1]}/${p[0].slice(-2)}`;
+    const p=String(date).slice(0,10).split("-");
+    return p.length===3 ? `${p[2]}/${p[1]}/${p[0].slice(-2)}` : date;
 }
 
 function makeSelect(options,value,index,key,placeholder){
@@ -423,7 +384,7 @@ function addPart(part){
     const no=getPartNumber(part);
     if(!no)return;
 
-    /* เลือกครั้งใหม่ = สร้างแถวใหม่เสมอ */
+    /* เลือกครั้งใหม่ = สร้างแถวใหม่ แม้ PART ซ้ำ */
     selectedParts.push({
         _id:nextItemId++,
         part_no:no,
@@ -601,9 +562,10 @@ async function saveAll(){
 
         renderSelected();
         renderDetails();
-        updateStats();
 
-        await loadRecords();
+        /* อัปเดตยอดจำนวนรายการจากฐานข้อมูล */
+        await loadRecordCount();
+        updateStats();
 
     }catch(error){
         console.error(error);
@@ -631,78 +593,18 @@ function clearForm(){
 }
 
 /* ==========================================
-   RECORDS
+   COUNT RECORDS ONLY
 ========================================== */
 
-async function loadRecords(){
-    const tbody=document.getElementById("recordBody");
-
+async function loadRecordCount(){
     try{
-        tbody.innerHTML='<tr><td colspan="10" class="loading">กำลังโหลด...</td></tr>';
-
-        const {data,error}=await db.from("spare_parts")
-            .select("*").order("created_at",{ascending:false});
+        const {count,error}=await db.from("spare_parts")
+            .select("*",{count:"exact",head:true});
 
         if(error)throw error;
-
-        allRecords=data||[];
-        renderRecords();
-        updateStats();
-
+        allRecords=Array.from({length:count||0});
     }catch(error){
-        tbody.innerHTML=`<tr><td colspan="10" class="loading">โหลดข้อมูลไม่สำเร็จ: ${escapeHTML(error.message)}</td></tr>`;
-    }
-}
-
-function renderRecords(){
-    const tbody=document.getElementById("recordBody");
-    const keyword=(document.getElementById("recordSearch").value||"").toLowerCase();
-
-    const rows=allRecords.filter(x=>
-        [x.part_no,x.customer,x.step,x.part_name,x.part_code,x.remark]
-        .join(" ").toLowerCase().includes(keyword)
-    );
-
-    if(!rows.length){
-        tbody.innerHTML='<tr><td colspan="10" class="loading">ไม่พบข้อมูล</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML=rows.map(x=>`
-        <tr>
-            <td><b>${escapeHTML(x.part_no)}</b></td>
-            <td>${escapeHTML(x.customer||"-")}</td>
-            <td>${escapeHTML(x.step||"-")}</td>
-            <td>${escapeHTML(x.part_name||"-")}</td>
-            <td>${escapeHTML(x.part_code||"-")}</td>
-            <td>${Number(x.withdraw_qty||0)}</td>
-            <td>${Number(x.order_qty||0)}</td>
-            <td>${formatDate(x.arrival_date)}</td>
-            <td>${escapeHTML(x.remark||"-")}</td>
-            <td>
-                <button class="btn btn-danger btn-small"
-                    onclick="deleteRecord(${Number(x.id)})">ลบ</button>
-            </td>
-        </tr>
-    `).join("");
-}
-
-/* ==========================================
-   DELETE
-========================================== */
-
-async function deleteRecord(id){
-    if(!confirm("ยืนยันลบรายการนี้หรือไม่?"))return;
-
-    try{
-        const {error}=await db.from("spare_parts").delete().eq("id",id);
-        if(error)throw error;
-
-        showStatus("ลบข้อมูลเรียบร้อย","success");
-        await loadRecords();
-
-    }catch(error){
-        showStatus("ลบไม่สำเร็จ: "+error.message,"error");
+        console.error("Count records error:",error);
     }
 }
 
@@ -721,7 +623,8 @@ function updateStats(){
 async function init(){
     setToday();
     updateStats();
-    await Promise.all([loadParts(),loadRecords()]);
+    await Promise.all([loadParts(),loadRecordCount()]);
+    updateStats();
 }
 
 init();
