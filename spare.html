@@ -50,8 +50,6 @@ box-shadow:0 8px 24px #0002;z-index:20
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{background:#e8f2fc;color:#245b89;border:1px solid #c8def1;padding:7px 10px;border-radius:20px;font-size:12px;font-weight:bold}
 .chip button{border:0;background:none;color:#b33;cursor:pointer;font-size:17px;margin-left:6px}
-
-/* ช่องค้นหา PART และวันที่อยู่แถวเดียวกัน */
 .picker-date-row{
 display:grid;
 grid-template-columns:minmax(0,1fr) 300px;
@@ -59,7 +57,6 @@ gap:16px;
 align-items:start;
 }
 .date-box{width:100%;margin:0}
-
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;min-width:1150px}
 th{background:#edf3f8;color:#425b72;font-size:12px;text-align:left;padding:12px 9px;white-space:nowrap}
@@ -131,7 +128,6 @@ td .remark-input{min-width:145px}
 <div class="panel-body">
 
 <div class="picker-date-row">
-
 <div class="field">
 <label>ค้นหา PART NO / CUSTOMER / PROCESS</label>
 <div class="part-picker">
@@ -145,7 +141,6 @@ td .remark-input{min-width:145px}
 <input type="date" id="arrivalDate">
 <small style="color:#718096">ใช้วันที่เดียวกันกับ PART ทุกรายการ</small>
 </div>
-
 </div>
 
 <div class="selected-area">
@@ -182,7 +177,6 @@ td .remark-input{min-width:145px}
 <th>ลบ</th>
 </tr>
 </thead>
-
 <tbody id="detailBody">
 <tr>
 <td colspan="9" class="loading">กรุณาเลือก PART NO ด้านบน</td>
@@ -244,7 +238,6 @@ td .remark-input{min-width:145px}
 <script>
 /* ==========================================
    1. ตั้งค่ารายการ Dropdown ตรงนี้
-   เพิ่ม / ลบ / เปลี่ยนข้อความได้เอง
 ========================================== */
 
 const OPTIONS = {
@@ -281,6 +274,9 @@ const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let allParts = [];
 let selectedParts = [];
 let allRecords = [];
+
+/* ใช้ ID แยกแต่ละแถว เพื่อให้ PART NO ซ้ำกันได้ */
+let nextItemId = 1;
 
 /* ==========================================
    HELPERS
@@ -387,11 +383,12 @@ document.addEventListener("click",event=>{
 function renderDropdown(){
     const keyword=partSearch.value.trim().toLowerCase();
 
+    /* ไม่ตัด PART ที่เคยเลือกแล้วออก
+       จึงสามารถเลือก PART NO เดิมซ้ำได้ */
     const filtered=allParts.filter(part=>{
         const no=getPartNumber(part);
-        const already=selectedParts.some(x=>x.part_no===no);
         const text=`${no} ${getCustomer(part)} ${getProcess(part)}`.toLowerCase();
-        return !already && text.includes(keyword);
+        return text.includes(keyword);
     }).slice(0,100);
 
     dropdown.innerHTML="";
@@ -417,9 +414,12 @@ function renderDropdown(){
 function addPart(part){
     const no=getPartNumber(part);
 
-    if(!no || selectedParts.some(x=>x.part_no===no))return;
+    if(!no)return;
 
+    /* ทุกครั้งที่เลือก จะสร้างรายการใหม่
+       แม้จะเป็น PART NO เดิมก็ตาม */
     selectedParts.push({
+        _id:nextItemId++,
         part_no:no,
         customer:getCustomer(part),
         process:getProcess(part),
@@ -438,8 +438,9 @@ function addPart(part){
     updateStats();
 }
 
-function removePart(no){
-    selectedParts=selectedParts.filter(x=>x.part_no!==no);
+/* ลบเฉพาะแถวที่กด ไม่ลบ PART NO เดียวกันทั้งหมด */
+function removePart(id){
+    selectedParts=selectedParts.filter(x=>x._id!==id);
     renderSelected();
     renderDetails();
     updateStats();
@@ -466,7 +467,7 @@ function renderSelected(){
     box.innerHTML=selectedParts.map(x=>`
         <span class="chip">
             ${escapeHTML(x.part_no)}
-            <button onclick="removePart('${escapeHTML(x.part_no)}')">×</button>
+            <button onclick="removePart(${x._id})" title="ลบรายการนี้">×</button>
         </span>
     `).join("");
 }
@@ -509,7 +510,7 @@ function renderDetails(){
 
             <td>
                 <button class="btn btn-danger btn-small"
-                    onclick="removePart('${escapeHTML(item.part_no)}')">ลบ</button>
+                    onclick="removePart(${item._id})">ลบ</button>
             </td>
         </tr>
     `).join("");
