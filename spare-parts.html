@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -19,7 +20,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Tahoma,sa
 .header p{margin:8px 0 0;color:#d6e5f2;font-size:13px}
 .container{padding:25px 18px 40px}
 .panel,.stat{background:white;border:1px solid var(--line);border-radius:11px;box-shadow:0 4px 18px #1836530b;margin-bottom:20px}
-.panel-title{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panel-title{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .panel-title h2{margin:0;font-size:17px;color:var(--navy)}
 .panel-body{padding:20px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
@@ -64,11 +65,13 @@ td select,td input{min-width:110px;padding:9px;font-size:12px}
 td .auto{background:#f1f5f9}
 td .partno{font-weight:bold;color:var(--navy);min-width:125px}
 td .remark-input{min-width:145px}
-.btn{border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-weight:bold;font-size:13px}
+.btn{border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-weight:bold;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .btn-primary{background:var(--blue);color:white}
 .btn-success{background:var(--green);color:white}
 .btn-secondary{background:#e8edf3;color:#40546a}
 .btn-danger{background:#fff0f0;color:var(--red)}
+.btn-history{background:var(--navy);color:white}
+.btn-history:hover{background:#244d70}
 .btn-small{padding:7px 10px;font-size:11px}
 .actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:17px}
 .status{display:none;padding:12px 15px;border-radius:7px;font-size:13px;margin-bottom:15px}
@@ -189,7 +192,7 @@ td .remark-input{min-width:145px}
 <span style="font-size:12px;color:#718096">
 จำนวนรายการ: <b id="rowCount">0</b> PART
 </span>
-<div style="display:flex;gap:8px">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn btn-secondary" onclick="clearForm()">ล้างฟอร์ม</button>
 <button class="btn btn-success" id="saveBtn" onclick="saveAll()">บันทึกข้อมูลทั้งหมด</button>
 </div>
@@ -200,7 +203,10 @@ td .remark-input{min-width:145px}
 <section class="panel">
 <div class="panel-title">
 <h2>03 | รายการอะไหล่ที่บันทึกแล้ว</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<a class="btn btn-history btn-small" href="spare-history.html">HISTORY ↗</a>
 <button class="btn btn-secondary btn-small" onclick="loadRecords()">รีเฟรช</button>
+</div>
 </div>
 
 <div class="panel-body">
@@ -273,8 +279,6 @@ const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let allParts = [];
 let selectedParts = [];
 let allRecords = [];
-
-/* ใช้ ID แยกแต่ละแถว เพื่อให้ PART NO ซ้ำกันได้ */
 let nextItemId = 1;
 
 /* ==========================================
@@ -320,10 +324,16 @@ function hideStatus(){
     el.textContent="";
 }
 
+/* แสดงวันที่เป็น DD/MM/YY */
 function formatDate(date){
     if(!date)return "-";
-    const p=String(date).slice(0,10).split("-");
-    return p.length===3 ? `${p[2]}/${p[1]}/${p[0].slice(2)}` : date;
+
+    const value=String(date).slice(0,10);
+    const p=value.split("-");
+
+    if(p.length!==3)return date;
+
+    return `${p[2]}/${p[1]}/${p[0].slice(-2)}`;
 }
 
 function makeSelect(options,value,index,key,placeholder){
@@ -382,8 +392,7 @@ document.addEventListener("click",event=>{
 function renderDropdown(){
     const keyword=partSearch.value.trim().toLowerCase();
 
-    /* ไม่ตัด PART ที่เคยเลือกแล้วออก
-       จึงสามารถเลือก PART NO เดิมซ้ำได้ */
+    /* อนุญาตให้เลือก PART NO เดิมซ้ำได้ */
     const filtered=allParts.filter(part=>{
         const no=getPartNumber(part);
         const text=`${no} ${getCustomer(part)} ${getProcess(part)}`.toLowerCase();
@@ -412,11 +421,9 @@ function renderDropdown(){
 
 function addPart(part){
     const no=getPartNumber(part);
-
     if(!no)return;
 
-    /* ทุกครั้งที่เลือก จะสร้างรายการใหม่
-       แม้จะเป็น PART NO เดิมก็ตาม */
+    /* เลือกครั้งใหม่ = สร้างแถวใหม่เสมอ */
     selectedParts.push({
         _id:nextItemId++,
         part_no:no,
@@ -437,7 +444,6 @@ function addPart(part){
     updateStats();
 }
 
-/* ลบเฉพาะแถวที่กด ไม่ลบ PART NO เดียวกันทั้งหมด */
 function removePart(id){
     selectedParts=selectedParts.filter(x=>x._id!==id);
     renderSelected();
@@ -490,11 +496,8 @@ function renderDetails(){
             <td><input class="auto" readonly value="${escapeHTML(item.process)}"></td>
 
             <td>${makeSelect(OPTIONS.partName,item.part_name,i,"part_name","เลือกชื่ออะไหล่")}</td>
-
             <td>${makeSelect(OPTIONS.partCode,item.part_code,i,"part_code","เลือกขนาด/CODE")}</td>
-
             <td>${makeSelect(OPTIONS.withdrawQty,item.withdraw_qty,i,"withdraw_qty","เลือกจำนวน")}</td>
-
             <td>${makeSelect(OPTIONS.orderQty,item.order_qty,i,"order_qty","เลือกจำนวน")}</td>
 
             <td>
@@ -569,8 +572,6 @@ async function saveAll(){
             showStatus(`กรุณาเลือกจำนวนเบิกและจำนวนสั่งทำของ PART ${item.part_no}`,"error");
             return;
         }
-
-        // REMARK เป็นชื่อคนเบิก พิมพ์เองได้ ไม่บังคับกรอก
     }
 
     const payload=selectedParts.map(item=>({
@@ -630,13 +631,15 @@ function clearForm(){
 }
 
 /* ==========================================
-   RECORD HISTORY
+   RECORDS
 ========================================== */
 
 async function loadRecords(){
     const tbody=document.getElementById("recordBody");
 
     try{
+        tbody.innerHTML='<tr><td colspan="10" class="loading">กำลังโหลด...</td></tr>';
+
         const {data,error}=await db.from("spare_parts")
             .select("*").order("created_at",{ascending:false});
 
