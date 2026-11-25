@@ -50,7 +50,16 @@ box-shadow:0 8px 24px #0002;z-index:20
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{background:#e8f2fc;color:#245b89;border:1px solid #c8def1;padding:7px 10px;border-radius:20px;font-size:12px;font-weight:bold}
 .chip button{border:0;background:none;color:#b33;cursor:pointer;font-size:17px;margin-left:6px}
-.date-box{max-width:350px;margin-top:18px}
+
+/* ช่องค้นหา PART และวันที่อยู่แถวเดียวกัน */
+.picker-date-row{
+display:grid;
+grid-template-columns:minmax(0,1fr) 300px;
+gap:16px;
+align-items:start;
+}
+.date-box{width:100%;margin:0}
+
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;min-width:1150px}
 th{background:#edf3f8;color:#425b72;font-size:12px;text-align:left;padding:12px 9px;white-space:nowrap}
@@ -74,11 +83,13 @@ td .remark-input{min-width:145px}
 .search-row input{width:100%}
 .loading{text-align:center;padding:20px;color:#718096}
 .empty{color:#9aa7b5;font-size:12px}
+
 @media(max-width:700px){
 .stats{grid-template-columns:1fr}
 .container{padding:15px 10px}
 .panel-body{padding:14px}
 .header{padding:20px}
+.picker-date-row{grid-template-columns:1fr;gap:14px}
 }
 </style>
 </head>
@@ -119,12 +130,22 @@ td .remark-input{min-width:145px}
 
 <div class="panel-body">
 
+<div class="picker-date-row">
+
 <div class="field">
 <label>ค้นหา PART NO / CUSTOMER / PROCESS</label>
 <div class="part-picker">
 <input id="partSearch" placeholder="พิมพ์ PART NO เพื่อค้นหา..." autocomplete="off">
 <div id="partDropdown" class="dropdown"></div>
 </div>
+</div>
+
+<div class="date-box">
+<label>วันที่อะไหล่เข้า <span style="color:red">*</span></label>
+<input type="date" id="arrivalDate">
+<small style="color:#718096">ใช้วันที่เดียวกันกับ PART ทุกรายการ</small>
+</div>
+
 </div>
 
 <div class="selected-area">
@@ -135,12 +156,6 @@ td .remark-input{min-width:145px}
 <div id="selectedParts" class="chips">
 <span class="empty">ยังไม่ได้เลือก PART NO</span>
 </div>
-</div>
-
-<div class="date-box">
-<label>วันที่อะไหล่เข้า <span style="color:red">*</span></label>
-<input type="date" id="arrivalDate">
-<small style="color:#718096">ใช้วันที่เดียวกันกับ PART ทุกรายการ</small>
 </div>
 
 </div>
