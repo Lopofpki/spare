@@ -4,90 +4,96 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Spare Parts Management | TNC</title>
+<title>Spare Parts Inventory | TNC</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
 :root{
---navy:#183653;--blue:#2878bd;--bg:#f3f6fa;
---line:#dce4ed;--text:#26384a;--green:#16865b;--red:#d94343;
+ --navy:#183653;--blue:#2878bd;--bg:#f3f6fa;
+ --line:#dce4ed;--text:#26384a;--green:#16865b;
+ --red:#d94343;--amber:#b7791f
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Tahoma,sans-serif}
-.header{background:linear-gradient(120deg,#183653,#244d70);color:white;padding:25px}
-.header-inner,.container{max-width:1500px;margin:auto}
-.header-inner{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
-.header h1{margin:0;font-size:24px}
-.header p{margin:8px 0 0;color:#d6e5f2;font-size:13px}
-.container{padding:25px 18px 40px}
-.panel,.stat{background:white;border:1px solid var(--line);border-radius:11px;box-shadow:0 4px 18px #1836530b;margin-bottom:20px}
-.panel-title{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
-.panel-title h2{margin:0;font-size:17px;color:var(--navy)}
-.panel-body{padding:20px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
-.stat{padding:16px 18px;margin:0}
+.header{background:linear-gradient(120deg,#183653,#244d70);color:white;padding:22px}
+.header-inner,.container{max-width:1600px;margin:auto}
+.header-inner{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:23px;margin:0}
+.header p{font-size:13px;color:#d6e5f2;margin:7px 0 0}
+.container{padding:22px 16px 40px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px}
+.stat,.panel{background:white;border:1px solid var(--line);border-radius:11px;box-shadow:0 4px 18px #1836530b}
+.stat{padding:15px}
 .stat span{font-size:12px;color:#718096}
-.stat strong{display:block;font-size:23px;color:var(--navy);margin-top:7px}
-label{display:block;font-size:12px;font-weight:bold;color:#536579;margin-bottom:7px}
-input,select{
-width:100%;border:1px solid #ccd7e2;border-radius:7px;
-padding:10px;font-size:13px;color:var(--text);background:white;outline:none;
-}
+.stat strong{display:block;font-size:24px;color:var(--navy);margin-top:6px}
+.panel{margin-bottom:18px}
+.panel-title{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.panel-title h2{margin:0;font-size:16px;color:var(--navy)}
+.panel-body{padding:17px}
+.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:9px;align-items:end}
+label{display:block;font-size:12px;font-weight:bold;color:#536579;margin-bottom:6px}
+input,select{width:100%;border:1px solid #ccd7e2;border-radius:7px;padding:10px;font-size:13px;color:var(--text);background:white;outline:none}
 input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2878bd18}
-input[readonly]{background:#f0f5fa}
-.field{margin-bottom:15px}
-.part-picker{position:relative}
-.dropdown{
-display:none;position:absolute;top:100%;left:0;right:0;max-height:250px;
-overflow:auto;background:white;border:1px solid var(--line);border-radius:8px;
-box-shadow:0 8px 24px #0002;z-index:20
-}
-.dropdown.show{display:block}
-.part-option{padding:11px;border-bottom:1px solid #edf1f5;cursor:pointer;font-size:13px}
-.part-option:hover{background:#eaf3fc}
-.part-option small{display:block;color:#718096;margin-top:4px}
-.selected-area{padding:13px;background:#f7f9fc;border:1px dashed #cbd7e4;border-radius:8px}
-.selected-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;font-weight:bold}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{background:#e8f2fc;color:#245b89;border:1px solid #c8def1;padding:7px 10px;border-radius:20px;font-size:12px;font-weight:bold}
-.chip button{border:0;background:none;color:#b33;cursor:pointer;font-size:17px;margin-left:6px}
-.picker-date-row{
-display:grid;
-grid-template-columns:minmax(0,1fr) 300px;
-gap:16px;
-align-items:start;
-}
-.date-box{width:100%;margin:0}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:1150px}
-th{background:#edf3f8;color:#425b72;font-size:12px;text-align:left;padding:12px 9px;white-space:nowrap}
-td{padding:8px;border-bottom:1px solid #e9eef3;font-size:12px;vertical-align:middle}
-td select,td input{min-width:110px;padding:9px;font-size:12px}
-td .auto{background:#f1f5f9}
-td .partno{font-weight:bold;color:var(--navy);min-width:125px}
-td .remark-input{min-width:145px}
-.btn{border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-weight:bold;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn{border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font-weight:bold;font-size:13px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.btn-primary{background:var(--blue);color:white}
 .btn-success{background:var(--green);color:white}
 .btn-secondary{background:#e8edf3;color:#40546a}
 .btn-danger{background:#fff0f0;color:var(--red)}
-.btn-history{background:white;color:var(--navy);border:1px solid #ffffff66}
-.btn-history:hover{background:#eaf3fc}
-.btn-small{padding:7px 10px;font-size:11px}
-.actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:17px}
-.status{display:none;padding:12px 15px;border-radius:7px;font-size:13px;margin-bottom:15px}
-.status.success{display:block;background:#e8f7ef;color:#147747}
-.status.error{display:block;background:#fff0f0;color:#b83232}
-.status.info{display:block;background:#eaf3fc;color:#245b89}
-.loading{text-align:center;padding:20px;color:#718096}
-.empty{color:#9aa7b5;font-size:12px}
-
-@media(max-width:700px){
-.stats{grid-template-columns:1fr}
-.container{padding:15px 10px}
-.panel-body{padding:14px}
-.header{padding:20px}
-.picker-date-row{grid-template-columns:1fr;gap:14px}
-.header-inner{align-items:flex-start}
+.btn-dark{background:var(--navy);color:white}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1120px}
+th{background:#edf3f8;color:#425b72;font-size:12px;text-align:left;padding:12px 9px;white-space:nowrap;position:sticky;top:0}
+td{padding:10px 9px;border-bottom:1px solid #e9eef3;font-size:12px;vertical-align:middle;white-space:nowrap}
+tbody tr:hover{background:#f8fbfe}
+.partno{font-weight:bold;color:var(--navy)}
+.qty{font-weight:bold;text-align:center}
+.badge{display:inline-block;padding:5px 8px;border-radius:20px;font-size:11px;font-weight:bold}
+.normal{background:#e8f7ef;color:#147747}
+.low{background:#fff5df;color:#946200}
+.out{background:#fff0f0;color:#b83232}
+.status{display:none;padding:11px 14px;border-radius:7px;font-size:13px;margin-bottom:14px}
+.status.show{display:block}
+.status.success{background:#e8f7ef;color:#147747}
+.status.error{background:#fff0f0;color:#b83232}
+.status.info{background:#eaf3fc;color:#245b89}
+.muted{color:#8a98a8}
+.hidden{display:none!important}
+.modal{position:fixed;inset:0;background:#10243888;display:none;align-items:center;justify-content:center;padding:15px;z-index:50}
+.modal.show{display:flex}
+.modal-card{background:white;border-radius:12px;width:min(680px,100%);max-height:90vh;overflow:auto;box-shadow:0 20px 60px #0003}
+.modal-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:18px}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.field.full{grid-column:1/-1}
+.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.detail{background:#f6f9fc;border:1px solid var(--line);border-radius:8px;padding:10px}
+.detail small{display:block;color:#718096;margin-bottom:5px}
+.detail b{font-size:13px}
+.qr-box{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.qr-paper{background:white;border:1px solid var(--line);padding:15px;text-align:center;min-width:180px}
+.qr-paper b{display:block;margin-top:8px}
+.movements{margin-top:18px}
+.empty{text-align:center;padding:24px;color:#8997a6}
+@media(max-width:800px){
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .toolbar{grid-template-columns:1fr 1fr}
+ .toolbar .search{grid-column:1/-1}
+ .form-grid{grid-template-columns:1fr}
+ .field.full{grid-column:auto}
+}
+@media(max-width:480px){
+ .stats{grid-template-columns:1fr 1fr}
+ .container{padding:13px 9px}
+ .header{padding:18px}
+ .header h1{font-size:19px}
+}
+@media print{
+ body *{visibility:hidden}
+ .qr-paper,.qr-paper *{visibility:visible}
+ .qr-paper{position:absolute;left:0;top:0;border:0}
 }
 </style>
 </head>
@@ -95,536 +101,701 @@ td .remark-input{min-width:145px}
 <body>
 
 <header class="header">
-<div class="header-inner">
-<div>
-<h1>SPARE PARTS MANAGEMENT</h1>
-<p>TNC | ระบบจัดการอะไหล่และติดตามการเบิก / สั่งทำ</p>
-</div>
-<a class="btn btn-history" href="spare-history.html">HISTORY ↗</a>
-</div>
+ <div class="header-inner">
+  <div>
+   <h1>MOLD SPARE PARTS INVENTORY</h1>
+   <p>TNC | ระบบควบคุมอะไหล่แม่พิมพ์และ QR ประจำ PART</p>
+  </div>
+  <span id="pageMode" class="badge" style="background:#ffffff22;color:white">INVENTORY</span>
+ </div>
 </header>
 
 <main class="container">
 
 <div id="status" class="status"></div>
 
-<div class="stats">
-<div class="stat">
-<span>จำนวนรายการทั้งหมด</span>
-<strong id="totalRecords">0</strong>
-</div>
-<div class="stat">
-<span>จำนวน PART ที่เลือก</span>
-<strong id="selectedCount">0</strong>
-</div>
-<div class="stat">
-<span>วันที่อะไหล่เข้า</span>
-<strong id="selectedDateText">-</strong>
-</div>
-</div>
-
-<!-- SECTION 01 -->
-<section class="panel">
-<div class="panel-title">
-<h2>01 | เลือก PART NO</h2>
-<span id="partLoading" style="font-size:12px;color:#718096">กำลังโหลด PART...</span>
-</div>
-
-<div class="panel-body">
-
-<div class="picker-date-row">
-<div class="field">
-<label>ค้นหา PART NO / CUSTOMER / PROCESS</label>
-<div class="part-picker">
-<input id="partSearch" placeholder="พิมพ์ PART NO เพื่อค้นหา..." autocomplete="off">
-<div id="partDropdown" class="dropdown"></div>
-</div>
-</div>
-
-<div class="date-box">
-<label>วันที่อะไหล่เข้า <span style="color:red">*</span></label>
-<input type="date" id="arrivalDate">
-<small style="color:#718096">ใช้วันที่เดียวกันกับ PART ทุกรายการ</small>
-</div>
-</div>
-
-<div class="selected-area">
-<div class="selected-head">
-<span>PART ที่เลือกไว้</span>
-<button class="btn btn-danger btn-small" onclick="clearSelected()">ล้างทั้งหมด</button>
-</div>
-<div id="selectedParts" class="chips">
-<span class="empty">ยังไม่ได้เลือก PART NO</span>
-</div>
-</div>
-
-</div>
+<section class="stats">
+ <div class="stat">
+  <span>จำนวน PART</span>
+  <strong id="statParts">0</strong>
+ </div>
+ <div class="stat">
+  <span>ยอดคงเหลือรวม</span>
+  <strong id="statBalance">0</strong>
+ </div>
+ <div class="stat">
+  <span>รายการต่ำกว่า MIN</span>
+  <strong id="statLow">0</strong>
+ </div>
+ <div class="stat">
+  <span>รายการหมด</span>
+  <strong id="statOut">0</strong>
+ </div>
 </section>
 
-<!-- SECTION 02 -->
-<section class="panel">
-<div class="panel-title">
-<h2>02 | รายละเอียดอะไหล่แต่ละ PART</h2>
-<span style="font-size:12px;color:#718096">เลือกข้อมูลแยกแต่ละ PART</span>
-</div>
+<section class="panel" id="inventoryPanel">
+ <div class="panel-title">
+  <h2>รายการอะไหล่ทั้งหมด</h2>
+  <span class="muted" id="loadLabel">กำลังโหลด...</span>
+ </div>
 
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>PART NO</th>
-<th>CUSTOMER</th>
-<th>PROCESS</th>
-<th>ชื่ออะไหล่</th>
-<th>ขนาด / CODE</th>
-<th>เบิก (จำนวน)</th>
-<th>สั่งทำ (จำนวน)</th>
-<th>REMARK (ชื่อคนเบิก)</th>
-<th>ลบ</th>
-</tr>
-</thead>
-<tbody id="detailBody">
-<tr>
-<td colspan="9" class="loading">กรุณาเลือก PART NO ด้านบน</td>
-</tr>
-</tbody>
-</table>
-</div>
+ <div class="panel-body">
+  <div class="toolbar">
+   <div class="search">
+    <label>ค้นหา PART NO / CUSTOMER / PART NAME</label>
+    <input id="searchInput" placeholder="พิมพ์เพื่อค้นหา...">
+   </div>
+   <button class="btn btn-primary" onclick="loadInventory()">รีเฟรช</button>
+   <button class="btn btn-dark" onclick="openMovementChooser()">บันทึก In / Out</button>
+  </div>
+ </div>
 
-<div class="panel-body">
-<div class="actions">
-<span style="font-size:12px;color:#718096">
-จำนวนรายการ: <b id="rowCount">0</b> PART
-</span>
-<div style="display:flex;gap:8px">
-<button class="btn btn-secondary" onclick="clearForm()">ล้างฟอร์ม</button>
-<button class="btn btn-success" id="saveBtn" onclick="saveAll()">บันทึกข้อมูลทั้งหมด</button>
-</div>
-</div>
-</div>
+ <div class="table-wrap">
+  <table>
+   <thead id="inventoryHead"></thead>
+   <tbody id="inventoryBody">
+    <tr><td class="empty">กำลังโหลดข้อมูล...</td></tr>
+   </tbody>
+  </table>
+ </div>
+</section>
+
+<section class="panel hidden" id="partPanel">
+ <div class="panel-title">
+  <h2>รายละเอียด PART จาก QR Code</h2>
+  <button class="btn btn-secondary" onclick="location.href=location.pathname">กลับหน้ารวม</button>
+ </div>
+
+ <div class="panel-body">
+  <div id="partDetails" class="detail-grid"></div>
+
+  <div class="actions" style="justify-content:flex-start">
+   <button class="btn btn-success" onclick="openMovement('IN')">รับเข้า (IN)</button>
+   <button class="btn btn-primary" onclick="openMovement('OUT')">เบิกออก (OUT)</button>
+   <button class="btn btn-secondary" onclick="printQR()">พิมพ์ QR Code</button>
+  </div>
+
+  <div class="movements">
+   <h3 style="font-size:15px;color:var(--navy)">ประวัติการเคลื่อนไหว</h3>
+   <div class="table-wrap">
+    <table style="min-width:650px">
+     <thead>
+      <tr>
+       <th>วันที่</th>
+       <th>ประเภท</th>
+       <th>จำนวน</th>
+       <th>หมายเหตุ</th>
+      </tr>
+     </thead>
+     <tbody id="movementBody"></tbody>
+    </table>
+   </div>
+  </div>
+ </div>
 </section>
 
 </main>
 
+<!-- MOVEMENT MODAL -->
+<div class="modal" id="movementModal">
+ <div class="modal-card">
+  <div class="modal-head">
+   <b id="movementTitle">บันทึกสต็อก</b>
+   <button class="btn btn-secondary" onclick="closeModal('movementModal')">ปิด</button>
+  </div>
+
+  <div class="modal-body">
+   <div class="form-grid">
+    <div class="field">
+     <label>PART NO</label>
+     <input id="movePartNo" readonly>
+    </div>
+
+    <div class="field">
+     <label>ประเภท</label>
+     <select id="moveType">
+      <option value="IN">IN - รับเข้า</option>
+      <option value="OUT">OUT - เบิกออก</option>
+     </select>
+    </div>
+
+    <div class="field">
+     <label>จำนวน *</label>
+     <input id="moveQty" type="number" min="1" step="1" placeholder="ระบุจำนวน">
+    </div>
+
+    <div class="field">
+     <label>วันที่ *</label>
+     <input id="moveDate" type="date">
+    </div>
+
+    <div class="field full">
+     <label>หมายเหตุ / ผู้ทำรายการ</label>
+     <input id="moveRemark" placeholder="ระบุชื่อหรือรายละเอียด (ถ้ามี)">
+    </div>
+   </div>
+
+   <div class="actions">
+    <button class="btn btn-success" id="saveMoveBtn" onclick="saveMovement()">บันทึก</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal" id="qrModal">
+ <div class="modal-card">
+  <div class="modal-head">
+   <b>QR CODE ประจำ PART</b>
+   <button class="btn btn-secondary" onclick="closeModal('qrModal')">ปิด</button>
+  </div>
+
+  <div class="modal-body">
+   <div class="qr-box">
+    <div class="qr-paper" id="qrPaper">
+     <div id="qrCanvas"></div>
+     <b id="qrPartLabel"></b>
+     <small id="qrUrlLabel" class="muted"></small>
+    </div>
+
+    <div>
+     <p>QR นี้เป็นของ PART เดียวเท่านั้น เมื่อนำไปสแกนจะเปิดหน้า Spare Parts ของ PART นี้โดยอัตโนมัติ</p>
+     <button class="btn btn-primary" onclick="printQR()">พิมพ์ QR</button>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+
 <script>
-/* ==========================================
-   1. ตั้งค่ารายการ Dropdown ตรงนี้
-========================================== */
-
-const OPTIONS = {
-    partName: [
-        "อะไหล่ตัวอย่าง 1",
-        "อะไหล่ตัวอย่าง 2",
-        "อะไหล่ตัวอย่าง 3"
-    ],
-
-    partCode: [
-        "CODE ตัวอย่าง 1",
-        "CODE ตัวอย่าง 2",
-        "CODE ตัวอย่าง 3"
-    ],
-
-    withdrawQty: [
-        "0","1","2","3","4","5","10","20"
-    ],
-
-    orderQty: [
-        "0","1","2","3","4","5","10","20"
-    ]
-};
-
-/* ==========================================
-   2. SUPABASE CONFIG
-========================================== */
+/* =========================================
+   SUPABASE CONFIG
+========================================= */
 
 const SUPABASE_URL = "https://enmzfxdswzhatvcenrds.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DkoWB0IDDgodellT5vgcLQ_YdqIhKdI";
 
-const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const db = window.supabase.createClient(
+ SUPABASE_URL,
+ SUPABASE_KEY
+);
 
-let allParts = [];
-let selectedParts = [];
-let allRecords = [];
-let nextItemId = 1;
+let parts = [];
+let currentPart = null;
+let currentQRUrl = "";
 
-/* ==========================================
+/* =========================================
    HELPERS
-========================================== */
+========================================= */
 
-function getValue(row,keys){
-    for(const key of keys){
-        if(row[key] !== undefined && row[key] !== null)
-            return String(row[key]).trim();
-    }
-    return "";
+const $ = id => document.getElementById(id);
+
+function esc(v){
+ return String(v ?? "").replace(/[&<>"']/g,c=>({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#039;"
+ }[c]));
 }
 
-function getPartNumber(row){
-    return getValue(row,["part_no","PART_NO","partNo","part_number"]);
+function val(row,keys){
+ for(const k of keys){
+  if(row[k]!==undefined && row[k]!==null)
+   return String(row[k]).trim();
+ }
+ return "";
 }
 
-function getCustomer(row){
-    return getValue(row,["customer","CUSTOMER","customer_name","customerName","cust_name"]);
+function partNo(r){
+ return val(r,["part_no","PART_NO","partNo","part_number"]);
 }
 
-function getProcess(row){
-    return getValue(row,["process","PROCESS","Process"]);
+function customer(r){
+ return val(r,["customer","CUSTOMER","customer_name"]);
 }
 
-function escapeHTML(value){
-    return String(value ?? "").replace(/[&<>"']/g,c=>({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    })[c]);
+function partName(r){
+ return val(r,["part_name","PART_NAME","partName"]);
 }
 
-function showStatus(message,type="success"){
-    const el=document.getElementById("status");
-    el.className="status "+type;
-    el.textContent=message;
-    window.scrollTo({top:0,behavior:"smooth"});
+function code(r){
+ return val(r,["code","CODE","part_code","partCode"]);
+}
+
+function standard(r){
+ return val(r,["standard","Standard","STANDARD"]);
+}
+
+function minStock(r){
+ const n=Number(r.min_stock ?? r.min ?? 0);
+ return Number.isFinite(n)?n:0;
+}
+
+function today(){
+ const d=new Date();
+ d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+ return d.toISOString().slice(0,10);
+}
+
+function showStatus(msg,type="success"){
+ const e=$("status");
+ e.className="status show "+type;
+ e.textContent=msg;
+ window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function hideStatus(){
-    const el=document.getElementById("status");
-    el.className="status";
-    el.textContent="";
+ $("status").className="status";
+ $("status").textContent="";
 }
 
-/* แสดงวันที่ DD/MM/YY */
-function formatDate(date){
-    if(!date)return "-";
-    const p=String(date).slice(0,10).split("-");
-    return p.length===3 ? `${p[2]}/${p[1]}/${p[0].slice(-2)}` : date;
+function fmtDate(v){
+ if(!v)return "-";
+ const p=String(v).slice(0,10).split("-");
+ return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v;
 }
 
-function makeSelect(options,value,index,key,placeholder){
-    const list=[...options];
-    if(value && !list.includes(String(value)))list.unshift(String(value));
-
-    return `
-    <select onchange="updateItem(${index},'${key}',this.value)">
-        <option value="">${placeholder}</option>
-        ${list.map(option=>`
-            <option value="${escapeHTML(option)}"
-            ${String(value)===String(option)?"selected":""}>
-            ${escapeHTML(option)}
-            </option>
-        `).join("")}
-    </select>`;
+function getBalance(p){
+ return Number(p.total_in||0)-Number(p.total_out||0);
 }
 
-/* ==========================================
-   LOAD PART DATABASE
-========================================== */
+function getState(p){
+ const b=getBalance(p);
+ const m=minStock(p);
 
-async function loadParts(){
-    const label=document.getElementById("partLoading");
+ if(b<=0)return {text:"OUT OF STOCK",cls:"out"};
+ if(b<=m)return {text:"LOW STOCK",cls:"low"};
 
-    try{
-        const {data,error}=await db.from("part_database")
-            .select("*").order("part_no",{ascending:true});
-
-        if(error)throw error;
-
-        allParts=(data||[]).filter(row=>getPartNumber(row));
-        label.textContent=`โหลด PART แล้ว ${allParts.length} รายการ`;
-
-    }catch(error){
-        label.textContent="โหลด PART ไม่สำเร็จ";
-        showStatus("โหลด PART ไม่สำเร็จ: "+error.message,"error");
-    }
+ return {text:"NORMAL",cls:"normal"};
 }
 
-/* ==========================================
-   SEARCH / SELECT PART
-========================================== */
+/* =========================================
+   LOAD INVENTORY
+========================================= */
 
-const partSearch=document.getElementById("partSearch");
-const dropdown=document.getElementById("partDropdown");
+async function loadInventory(){
 
-partSearch.addEventListener("input",renderDropdown);
-partSearch.addEventListener("focus",renderDropdown);
+ hideStatus();
+ $("loadLabel").textContent="กำลังโหลด...";
 
-document.addEventListener("click",event=>{
-    if(!event.target.closest(".part-picker"))
-        dropdown.classList.remove("show");
-});
+ try{
 
-function renderDropdown(){
-    const keyword=partSearch.value.trim().toLowerCase();
+  const {data:pd,error:pe}=await db
+   .from("part_database")
+   .select("*")
+   .order("part_no",{ascending:true});
 
-    /* อนุญาตให้เลือก PART NO เดิมซ้ำได้ */
-    const filtered=allParts.filter(part=>{
-        const no=getPartNumber(part);
-        const text=`${no} ${getCustomer(part)} ${getProcess(part)}`.toLowerCase();
-        return text.includes(keyword);
-    }).slice(0,100);
+  if(pe)throw pe;
 
-    dropdown.innerHTML="";
+  const {data:mv,error:me}=await db
+   .from("spare_stock_movements")
+   .select("part_no,movement_type,quantity");
 
-    if(!filtered.length){
-        dropdown.innerHTML='<div class="part-option">ไม่พบ PART ที่ค้นหา</div>';
-    }else{
-        filtered.forEach(part=>{
-            const option=document.createElement("div");
-            option.className="part-option";
-            option.innerHTML=`
-                <b>${escapeHTML(getPartNumber(part))}</b>
-                <small>CUSTOMER: ${escapeHTML(getCustomer(part)||"-")}
-                | PROCESS: ${escapeHTML(getProcess(part)||"-")}</small>`;
-            option.onclick=()=>addPart(part);
-            dropdown.appendChild(option);
-        });
-    }
+  if(me)throw me;
 
-    dropdown.classList.add("show");
+  const totals={};
+
+  (mv||[]).forEach(x=>{
+
+   const k=x.part_no;
+
+   if(!totals[k]){
+    totals[k]={total_in:0,total_out:0};
+   }
+
+   if(x.movement_type==="IN")
+    totals[k].total_in+=Number(x.quantity||0);
+
+   if(x.movement_type==="OUT")
+    totals[k].total_out+=Number(x.quantity||0);
+
+  });
+
+  parts=(pd||[])
+   .filter(x=>partNo(x))
+   .map(x=>({
+    ...x,
+    ...(totals[partNo(x)]||{
+     total_in:0,
+     total_out:0
+    })
+   }));
+
+  renderInventory();
+  updateStats();
+
+  $("loadLabel").textContent=`โหลดแล้ว ${parts.length} PART`;
+
+  const p=new URLSearchParams(location.search).get("p");
+
+  if(p)await openPartByNo(p);
+
+ }catch(e){
+
+  console.error(e);
+
+  $("loadLabel").textContent="โหลดไม่สำเร็จ";
+
+  showStatus(
+   "โหลดข้อมูลไม่สำเร็จ: "+e.message,
+   "error"
+  );
+ }
 }
 
-function addPart(part){
-    const no=getPartNumber(part);
-    if(!no)return;
+/* =========================================
+   RENDER INVENTORY
+========================================= */
 
-    /* เลือกครั้งใหม่ = สร้างแถวใหม่ แม้ PART ซ้ำ */
-    selectedParts.push({
-        _id:nextItemId++,
-        part_no:no,
-        customer:getCustomer(part),
-        process:getProcess(part),
-        part_name:"",
-        part_code:"",
-        withdraw_qty:"",
-        order_qty:"",
-        remark:""
-    });
+function renderInventory(){
 
-    partSearch.value="";
-    dropdown.classList.remove("show");
+ const q=$("searchInput").value.trim().toLowerCase();
 
-    renderSelected();
-    renderDetails();
-    updateStats();
-}
+ const list=parts.filter(p=>
+  `${partNo(p)} ${customer(p)} ${partName(p)} ${code(p)}`
+  .toLowerCase()
+  .includes(q)
+ );
 
-function removePart(id){
-    selectedParts=selectedParts.filter(x=>x._id!==id);
-    renderSelected();
-    renderDetails();
-    updateStats();
-}
+ const hasStandard=list.some(p=>standard(p));
 
-function clearSelected(){
-    if(!selectedParts.length)return;
-    if(!confirm("ล้าง PART ที่เลือกทั้งหมดหรือไม่?"))return;
+ const heads=[
+  "No",
+  "Customer",
+  "Part No",
+  "CODE",
+  "Part Name",
+  ...(hasStandard?["Standard"]:[]),
+  "In",
+  "Out",
+  "balance",
+  "Min",
+  "status",
+  "QR"
+ ];
 
-    selectedParts=[];
-    renderSelected();
-    renderDetails();
-    updateStats();
-}
+ $("inventoryHead").innerHTML=
+  "<tr>"+heads.map(x=>`<th>${x}</th>`).join("")+"</tr>";
 
-function renderSelected(){
-    const box=document.getElementById("selectedParts");
+ if(!list.length){
+  $("inventoryBody").innerHTML=`
+   <tr>
+    <td colspan="${heads.length}" class="empty">ไม่พบข้อมูล PART</td>
+   </tr>`;
+  return;
+ }
 
-    if(!selectedParts.length){
-        box.innerHTML='<span class="empty">ยังไม่ได้เลือก PART NO</span>';
-        return;
-    }
+ $("inventoryBody").innerHTML=list.map((p,i)=>{
 
-    box.innerHTML=selectedParts.map(x=>`
-        <span class="chip">
-            ${escapeHTML(x.part_no)}
-            <button onclick="removePart(${x._id})" title="ลบรายการนี้">×</button>
-        </span>
-    `).join("");
-}
+  const state=getState(p);
 
-/* ==========================================
-   DETAIL TABLE
-========================================== */
+  return `
+   <tr>
+    <td>${i+1}</td>
+    <td>${esc(customer(p)||"-")}</td>
+    <td class="partno">${esc(partNo(p))}</td>
+    <td>${esc(code(p)||"-")}</td>
+    <td>${esc(partName(p)||"-")}</td>
 
-function renderDetails(){
-    const tbody=document.getElementById("detailBody");
-
-    if(!selectedParts.length){
-        tbody.innerHTML='<tr><td colspan="9" class="loading">กรุณาเลือก PART NO ด้านบน</td></tr>';
-        return;
+    ${hasStandard?
+     `<td>${standard(p)?esc(standard(p)):""}</td>`
+     :""
     }
 
-    tbody.innerHTML=selectedParts.map((item,i)=>`
-        <tr>
-            <td><input class="partno" readonly value="${escapeHTML(item.part_no)}"></td>
-            <td><input class="auto" readonly value="${escapeHTML(item.customer)}"></td>
-            <td><input class="auto" readonly value="${escapeHTML(item.process)}"></td>
+    <td class="qty">${Number(p.total_in||0)}</td>
+    <td class="qty">${Number(p.total_out||0)}</td>
+    <td class="qty"><b>${getBalance(p)}</b></td>
+    <td class="qty">${minStock(p)}</td>
 
-            <td>${makeSelect(OPTIONS.partName,item.part_name,i,"part_name","เลือกชื่ออะไหล่")}</td>
-            <td>${makeSelect(OPTIONS.partCode,item.part_code,i,"part_code","เลือกขนาด/CODE")}</td>
-            <td>${makeSelect(OPTIONS.withdrawQty,item.withdraw_qty,i,"withdraw_qty","เลือกจำนวน")}</td>
-            <td>${makeSelect(OPTIONS.orderQty,item.order_qty,i,"order_qty","เลือกจำนวน")}</td>
+    <td>
+     <span class="badge ${state.cls}">
+      ${state.text}
+     </span>
+    </td>
 
-            <td>
-                <input
-                    class="remark-input"
-                    type="text"
-                    value="${escapeHTML(item.remark)}"
-                    placeholder="ชื่อคนเบิก"
-                    oninput="updateItem(${i},'remark',this.value)"
-                >
-            </td>
+    <td>
+     <button class="btn btn-secondary"
+      onclick="showQR('${encodeURIComponent(partNo(p))}')">
+      QR
+     </button>
+    </td>
+   </tr>
+  `;
 
-            <td>
-                <button class="btn btn-danger btn-small"
-                    onclick="removePart(${item._id})">ลบ</button>
-            </td>
-        </tr>
-    `).join("");
-
-    document.getElementById("rowCount").textContent=selectedParts.length;
+ }).join("");
 }
-
-function updateItem(index,key,value){
-    if(selectedParts[index]){
-        selectedParts[index][key]=value;
-    }
-}
-
-/* ==========================================
-   DATE
-========================================== */
-
-const arrivalDate=document.getElementById("arrivalDate");
-
-function setToday(){
-    const now=new Date();
-    const local=new Date(now.getTime()-now.getTimezoneOffset()*60000);
-    arrivalDate.value=local.toISOString().slice(0,10);
-}
-
-arrivalDate.addEventListener("change",updateStats);
-
-/* ==========================================
-   SAVE ALL
-========================================== */
-
-async function saveAll(){
-    hideStatus();
-
-    if(!selectedParts.length){
-        showStatus("กรุณาเลือก PART NO อย่างน้อย 1 รายการ","error");
-        return;
-    }
-
-    if(!arrivalDate.value){
-        showStatus("กรุณาเลือกวันที่อะไหล่เข้า","error");
-        return;
-    }
-
-    for(const item of selectedParts){
-        if(!item.part_name){
-            showStatus(`กรุณาเลือกชื่ออะไหล่ของ PART ${item.part_no}`,"error");
-            return;
-        }
-
-        if(!item.part_code){
-            showStatus(`กรุณาเลือกขนาด/CODE ของ PART ${item.part_no}`,"error");
-            return;
-        }
-
-        if(item.withdraw_qty==="" || item.order_qty===""){
-            showStatus(`กรุณาเลือกจำนวนเบิกและจำนวนสั่งทำของ PART ${item.part_no}`,"error");
-            return;
-        }
-    }
-
-    const payload=selectedParts.map(item=>({
-        part_no:item.part_no,
-        step:item.process || null,
-        customer:item.customer || null,
-        part_name:item.part_name,
-        part_code:item.part_code,
-        withdraw_qty:Number(item.withdraw_qty),
-        order_qty:Number(item.order_qty),
-        arrival_date:arrivalDate.value,
-        remark:item.remark.trim() || null
-    }));
-
-    const btn=document.getElementById("saveBtn");
-    btn.disabled=true;
-    btn.textContent="กำลังบันทึก...";
-
-    try{
-        const {error}=await db.from("spare_parts").insert(payload);
-        if(error)throw error;
-
-        showStatus(`บันทึกสำเร็จ ${payload.length} รายการ`,"success");
-
-        selectedParts=[];
-        partSearch.value="";
-
-        renderSelected();
-        renderDetails();
-
-        /* อัปเดตยอดจำนวนรายการจากฐานข้อมูล */
-        await loadRecordCount();
-        updateStats();
-
-    }catch(error){
-        console.error(error);
-        showStatus("บันทึกไม่สำเร็จ: "+error.message,"error");
-    }finally{
-        btn.disabled=false;
-        btn.textContent="บันทึกข้อมูลทั้งหมด";
-    }
-}
-
-/* ==========================================
-   CLEAR FORM
-========================================== */
-
-function clearForm(){
-    if(!confirm("ต้องการล้างข้อมูลในฟอร์มหรือไม่?"))return;
-
-    selectedParts=[];
-    partSearch.value="";
-
-    renderSelected();
-    renderDetails();
-    updateStats();
-    hideStatus();
-}
-
-/* ==========================================
-   COUNT RECORDS ONLY
-========================================== */
-
-async function loadRecordCount(){
-    try{
-        const {count,error}=await db.from("spare_parts")
-            .select("*",{count:"exact",head:true});
-
-        if(error)throw error;
-        allRecords=Array.from({length:count||0});
-    }catch(error){
-        console.error("Count records error:",error);
-    }
-}
-
-/* ==========================================
-   DASHBOARD / START
-========================================== */
 
 function updateStats(){
-    document.getElementById("totalRecords").textContent=allRecords.length;
-    document.getElementById("selectedCount").textContent=selectedParts.length;
-    document.getElementById("rowCount").textContent=selectedParts.length;
-    document.getElementById("selectedDateText").textContent=
-        arrivalDate.value?formatDate(arrivalDate.value):"-";
+
+ let low=0,out=0,balance=0;
+
+ parts.forEach(p=>{
+
+  const b=getBalance(p);
+
+  balance+=b;
+
+  if(b<=0)out++;
+  else if(b<=minStock(p))low++;
+
+ });
+
+ $("statParts").textContent=parts.length;
+ $("statBalance").textContent=balance;
+ $("statLow").textContent=low;
+ $("statOut").textContent=out;
 }
 
+$("searchInput").addEventListener("input",renderInventory);
+
+/* =========================================
+   OPEN PART FROM QR
+========================================= */
+
+async function openPartByNo(no){
+
+ const p=parts.find(x=>partNo(x)===no);
+
+ if(!p){
+  showStatus("ไม่พบ PART NO "+no+" ใน part_database","error");
+  return;
+ }
+
+ currentPart=p;
+
+ $("inventoryPanel").classList.add("hidden");
+ $("partPanel").classList.remove("hidden");
+
+ $("pageMode").textContent="QR PART: "+no;
+
+ const fields=[
+  ["Customer",customer(p)],
+  ["Part No",partNo(p)],
+  ["CODE",code(p)],
+  ["Part Name",partName(p)],
+  ["Standard",standard(p)],
+  ["Min",minStock(p)],
+  ["In",p.total_in],
+  ["Out",p.total_out],
+  ["Balance",getBalance(p)]
+ ];
+
+ $("partDetails").innerHTML=fields
+  .filter(([k,v])=>
+   k!=="Standard"||String(v||"").trim()!==""
+  )
+  .map(([k,v])=>`
+   <div class="detail">
+    <small>${k}</small>
+    <b>${esc(v||"-")}</b>
+   </div>
+  `).join("");
+
+ await loadMovements(no);
+}
+
+/* =========================================
+   MOVEMENT HISTORY
+========================================= */
+
+async function loadMovements(no){
+
+ const {data,error}=await db
+  .from("spare_stock_movements")
+  .select("*")
+  .eq("part_no",no)
+  .order("movement_date",{ascending:false})
+  .order("created_at",{ascending:false});
+
+ if(error){
+
+  $("movementBody").innerHTML=`
+   <tr>
+    <td colspan="4" class="empty">
+     โหลดประวัติไม่ได้: ${esc(error.message)}
+    </td>
+   </tr>`;
+
+  return;
+ }
+
+ $("movementBody").innerHTML=(data||[]).length?
+  (data||[]).map(x=>`
+   <tr>
+    <td>${fmtDate(x.movement_date)}</td>
+    <td>${x.movement_type==="IN"?"รับเข้า":"เบิกออก"}</td>
+    <td>${Number(x.quantity)}</td>
+    <td>${esc(x.remark||"-")}</td>
+   </tr>
+  `).join("")
+  :
+  `<tr><td colspan="4" class="empty">ยังไม่มีประวัติ</td></tr>`;
+}
+
+/* =========================================
+   IN / OUT
+========================================= */
+
+function openMovement(type){
+
+ if(!currentPart)return;
+
+ $("movePartNo").value=partNo(currentPart);
+ $("moveType").value=type;
+ $("moveQty").value="";
+ $("moveDate").value=today();
+ $("moveRemark").value="";
+
+ $("movementTitle").textContent=
+  type==="IN"?"บันทึกรับเข้า (IN)":"บันทึกเบิกออก (OUT)";
+
+ $("movementModal").classList.add("show");
+}
+
+function openMovementChooser(){
+
+ if(!parts.length){
+  showStatus("ยังไม่มี PART ในฐานข้อมูล","error");
+  return;
+ }
+
+ const no=prompt("กรอก PART NO ที่ต้องการบันทึก In / Out");
+
+ if(!no)return;
+
+ const p=parts.find(x=>
+  partNo(x).toLowerCase()===no.trim().toLowerCase()
+ );
+
+ if(!p){
+  showStatus("ไม่พบ PART NO นี้","error");
+  return;
+ }
+
+ currentPart=p;
+ openMovement("IN");
+}
+
+function closeModal(id){
+ $(id).classList.remove("show");
+}
+
+async function saveMovement(){
+
+ const no=$("movePartNo").value;
+ const type=$("moveType").value;
+ const qty=Number($("moveQty").value);
+ const date=$("moveDate").value;
+ const remark=$("moveRemark").value.trim();
+
+ if(!qty||qty<1||!Number.isInteger(qty)){
+  showStatus("กรุณาระบุจำนวนเป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป","error");
+  return;
+ }
+
+ if(!date){
+  showStatus("กรุณาเลือกวันที่","error");
+  return;
+ }
+
+ const p=parts.find(x=>partNo(x)===no);
+
+ if(type==="OUT"&&p&&qty>getBalance(p)){
+  showStatus("จำนวนเบิกมากกว่ายอดคงเหลือ","error");
+  return;
+ }
+
+ const btn=$("saveMoveBtn");
+
+ btn.disabled=true;
+ btn.textContent="กำลังบันทึก...";
+
+ try{
+
+  const {error}=await db
+   .from("spare_stock_movements")
+   .insert([{
+    part_no:no,
+    movement_type:type,
+    quantity:qty,
+    movement_date:date,
+    remark:remark||null
+   }]);
+
+  if(error)throw error;
+
+  closeModal("movementModal");
+
+  showStatus("บันทึกสต็อกเรียบร้อย","success");
+
+  await loadInventory();
+
+  if(new URLSearchParams(location.search).get("p"))
+   await openPartByNo(no);
+
+ }catch(e){
+
+  showStatus("บันทึกไม่สำเร็จ: "+e.message,"error");
+
+ }finally{
+
+  btn.disabled=false;
+  btn.textContent="บันทึก";
+
+ }
+}
+
+/* =========================================
+   QR CODE
+========================================= */
+
+function showQR(encodedNo){
+
+ const no=decodeURIComponent(encodedNo);
+
+ const url=new URL(location.pathname,location.origin);
+
+ url.searchParams.set("p",no);
+
+ currentQRUrl=url.href;
+
+ $("qrCanvas").innerHTML="";
+
+ new QRCode($("qrCanvas"),{
+  text:currentQRUrl,
+  width:180,
+  height:180,
+  correctLevel:QRCode.CorrectLevel.M
+ });
+
+ $("qrPartLabel").textContent=no;
+ $("qrUrlLabel").textContent=currentQRUrl;
+
+ $("qrModal").classList.add("show");
+}
+
+function printQR(){
+
+ if(!currentQRUrl&&currentPart)
+  showQR(encodeURIComponent(partNo(currentPart)));
+
+ window.print();
+}
+
+/* =========================================
+   START
+========================================= */
+
 async function init(){
-    setToday();
-    updateStats();
-    await Promise.all([loadParts(),loadRecordCount()]);
-    updateStats();
+
+ const p=new URLSearchParams(location.search).get("p");
+
+ if(p)
+  $("pageMode").textContent="กำลังเปิด PART "+p;
+
+ await loadInventory();
 }
 
 init();
