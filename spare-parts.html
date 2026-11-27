@@ -38,6 +38,7 @@ h1{font-size:23px;margin:0}
 label{display:block;font-size:12px;font-weight:bold;color:#536579;margin-bottom:6px}
 input,select{width:100%;border:1px solid #ccd7e2;border-radius:7px;padding:10px;font-size:13px;color:var(--text);background:#fff;outline:none}
 input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2878bd18}
+select:disabled{background:#edf1f5;color:#718096;cursor:not-allowed}
 .btn{border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font-weight:bold;font-size:13px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 .btn-primary{background:var(--blue);color:#fff}
 .btn-success{background:var(--green);color:#fff}
@@ -141,6 +142,7 @@ body *{visibility:hidden}
 <button class="btn btn-primary" onclick="loadInventory()">รีเฟรช</button>
 <button class="btn btn-success" onclick="openAddPart()">+ เพิ่ม PART</button>
 <button class="btn btn-dark" onclick="openImport()">Import Excel</button>
+<button class="btn btn-secondary" onclick="exportExcel()">Export Excel</button>
 <button class="btn btn-secondary" onclick="openMovementChooser()">บันทึก In / Out</button>
 </div>
 </div>
@@ -158,7 +160,6 @@ body *{visibility:hidden}
 <section class="panel hidden" id="partPanel">
 <div class="panel-title">
 <h2>รายละเอียด PART จาก QR Code</h2>
-<button class="btn btn-secondary" onclick="backToInventory()">กลับหน้ารวม</button>
 </div>
 
 <div class="panel-body">
@@ -199,8 +200,9 @@ body *{visibility:hidden}
 <div class="field full">
 <label>เลือก CODE *</label>
 <select id="addCode" onchange="fillCatalogFields()">
-<option value="">-- เลือก CODE --</option>
+<option value="">-- กำลังโหลด CODE --</option>
 </select>
+<div id="catalogHint" class="help" style="margin-top:6px"></div>
 </div>
 
 <div class="field">
@@ -229,7 +231,7 @@ body *{visibility:hidden}
 </div>
 
 </div>
-<p class="help">เมื่อเลือก CODE ระบบจะดึง Part Name และ Standard จากตาราง spare_part_catalog โดยอัตโนมัติ</p>
+<p class="help">เมื่อเลือก CODE ระบบจะดึง Part Name และ Standard จากฐานข้อมูลให้อัตโนมัติ</p>
 <div class="actions">
 <button class="btn btn-success" id="addSaveBtn" onclick="saveNewPart()">บันทึก PART</button>
 </div>
@@ -246,11 +248,11 @@ body *{visibility:hidden}
 </div>
 <div class="modal-body">
 
-<label>เลือกไฟล์ Excel (.xlsx / .xls)</label>
+<label>เลือกไฟล์ Excel (.xlsx / .xls / .csv)</label>
 <input id="excelFile" type="file" accept=".xlsx,.xls,.csv">
 
 <p class="help">
-ระบบจะอ่านหัวตารางจากไฟล์ โดยรองรับคอลัมน์ Customer, Part No, CODE, Part Name, Standard, In, Out และ Min
+ระบบรองรับคอลัมน์ Customer, Part No, CODE, Part Name, Standard, In, Out และ Min
 <br>หาก Part No หรือ Customer เป็นช่องว่างจากการ Merge Cell ระบบจะใช้ค่าจากแถวก่อนหน้า
 </p>
 
@@ -401,43 +403,141 @@ $("status").textContent="";
 function closeModal(id){
 $(id).classList.remove("show");
 }
-function backToInventory(){
-location.href=location.pathname;
-}
 
 /* =========================================
-   LOAD DATA
+   CATALOG - FIX CODE DROPDOWN
 ========================================= */
 
+/*
+  ใช้ข้อมูลจาก spare_part_catalog ก่อน
+  และนำ CODE จาก spare_parts_inventory มารวมด้วย
+  เพื่อให้ CODE เดิมที่มีใน Inventory เลือกได้
+  แม้ catalog จะยังไม่มีข้อมูล
+*/
+
+function buildCatalogFromInventory(){
+const map=new Map();
+
+parts.forEach(p=>{
+const c=code(p);
+if(!c)return;
+
+const key=c.trim().toLowerCase();
+const old=map.get(key);
+
+if(!old){
+map.set(key,{
+code:c,
+part_name:partName(p),
+standard:standard(p)||""
+});
+}else{
+if(!old.part_name&&partName(p))old.part_name=partName(p);
+if(!old.standard&&standard(p))old.standard=standard(p);
+}
+});
+
+return [...map.values()];
+}
+
+function mergeCatalog(databaseCatalog,inventoryCatalog){
+const map=new Map();
+
+(databaseCatalog||[]).forEach(c=>{
+if(!c.code)return;
+map.set(String(c.code).trim().toLowerCase(),{
+code:String(c.code).trim(),
+part_name:c.part_name||"",
+standard:c.standard||""
+});
+});
+
+(inventoryCatalog||[]).forEach(c=>{
+if(!c.code)return;
+const key=String(c.code).trim().toLowerCase();
+const old=map.get(key);
+
+if(!old){
+map.set(key,{
+code:c.code,
+part_name:c.part_name||"",
+standard:c.standard||""
+});
+}else{
+if(!old.part_name&&c.part_name)old.part_name=c.part_name;
+if(!old.standard&&c.standard)old.standard=c.standard;
+}
+});
+
+return [...map.values()].sort((a,b)=>
+a.code.localeCompare(b.code,undefined,{numeric:true,sensitivity:"base"})
+);
+}
+
 async function loadCatalog(){
+let databaseCatalog=[];
+
+try{
 const {data,error}=await db
 .from("spare_part_catalog")
 .select("*")
 .order("code",{ascending:true});
 
 if(error)throw error;
-catalog=data||[];
+databaseCatalog=data||[];
+}catch(error){
+console.warn("อ่าน spare_part_catalog ไม่สำเร็จ ใช้ข้อมูลจาก Inventory แทน:",error.message);
+}
+
+const inventoryCatalog=buildCatalogFromInventory();
+catalog=mergeCatalog(databaseCatalog,inventoryCatalog);
+
 renderCatalogSelect();
 }
 
 function renderCatalogSelect(){
 const select=$("addCode");
-const old=select.value;
-select.innerHTML='<option value="">-- เลือก CODE --</option>'+
-catalog.map(c=>`<option value="${esc(c.code)}">${esc(c.code)}</option>`).join("");
-if(catalog.some(c=>c.code===old))select.value=old;
+const oldValue=select.value;
+
+select.innerHTML=
+'<option value="">-- เลือก CODE --</option>'+
+catalog.map(c=>
+`<option value="${esc(c.code)}">${esc(c.code)}</option>`
+).join("");
+
+select.disabled=catalog.length===0;
+
+if(catalog.some(c=>c.code===oldValue)){
+select.value=oldValue;
+}else{
+select.value="";
+}
+
+$("catalogHint").textContent=catalog.length
+?`พบ CODE ที่เลือกได้ ${catalog.length} รายการ`
+:"ยังไม่มี CODE กรุณา Import Excel หรือเพิ่มข้อมูลอะไหล่ก่อน";
+
 fillCatalogFields();
 }
 
 function fillCatalogFields(){
-const c=catalog.find(x=>x.code===$("addCode").value);
+const selected=$("addCode").value;
+const c=catalog.find(x=>
+String(x.code).trim().toLowerCase()===String(selected).trim().toLowerCase()
+);
+
 $("addPartName").value=c?.part_name||"";
 $("addStandard").value=c?.standard||"";
 }
 
+/* =========================================
+   LOAD DATA
+========================================= */
+
 async function loadInventory(){
 hideStatus();
 $("loadLabel").textContent="กำลังโหลด...";
+
 try{
 const {data,error}=await db
 .from("spare_parts_inventory")
@@ -445,11 +545,13 @@ const {data,error}=await db
 .order("part_no",{ascending:true});
 
 if(error)throw error;
+
 parts=(data||[]).filter(x=>partNo(x));
 
 await loadCatalog();
 renderInventory();
 updateStats();
+
 $("loadLabel").textContent=`โหลดแล้ว ${parts.length} รายการ`;
 
 const params=new URLSearchParams(location.search);
@@ -461,6 +563,7 @@ await openPartById(id);
 }else if(oldPartNo){
 await openPartByNo(oldPartNo);
 }
+
 }catch(e){
 console.error(e);
 $("loadLabel").textContent="โหลดไม่สำเร็จ";
@@ -474,12 +577,14 @@ showStatus("โหลดข้อมูลไม่สำเร็จ: "+e.messa
 
 function renderInventory(){
 const q=$("searchInput").value.trim().toLowerCase();
+
 const list=parts.filter(p=>
 `${partNo(p)} ${customer(p)} ${partName(p)} ${code(p)} ${standard(p)}`
 .toLowerCase().includes(q)
 );
 
 const heads=["No","Customer","Part No","CODE","Part Name","Standard","In","Out","Balance","Min","Status","จัดการ"];
+
 $("inventoryHead").innerHTML="<tr>"+heads.map(x=>`<th>${x}</th>`).join("")+"</tr>";
 
 if(!list.length){
@@ -489,6 +594,7 @@ return;
 
 $("inventoryBody").innerHTML=list.map((p,i)=>{
 const state=getState(p);
+
 return `
 <tr>
 <td>${i+1}</td>
@@ -513,17 +619,20 @@ return `
 
 function updateStats(){
 let low=0,out=0,balance=0;
+
 parts.forEach(p=>{
 const b=getBalance(p);
 balance+=b;
 if(b<=0)out++;
 else if(b<=minStock(p))low++;
 });
+
 $("statParts").textContent=parts.length;
 $("statBalance").textContent=balance;
 $("statLow").textContent=low;
 $("statOut").textContent=out;
 }
+
 $("searchInput").addEventListener("input",renderInventory);
 
 /* =========================================
@@ -537,7 +646,9 @@ $("addCode").value="";
 $("addIn").value=0;
 $("addOut").value=0;
 $("addMin").value=0;
-fillCatalogFields();
+
+renderCatalogSelect();
+
 $("addModal").classList.add("show");
 }
 
@@ -545,7 +656,10 @@ async function saveNewPart(){
 const customerValue=$("addCustomer").value.trim();
 const no=$("addPartNo").value.trim();
 const selectedCode=$("addCode").value;
-const c=catalog.find(x=>x.code===selectedCode);
+
+const c=catalog.find(x=>
+String(x.code).trim().toLowerCase()===String(selectedCode).trim().toLowerCase()
+);
 
 if(!no||!selectedCode||!c){
 showStatus("กรุณาระบุ Part No และเลือก CODE","error");
@@ -565,8 +679,8 @@ const row={
 customer:customerValue,
 part_no:no,
 code:c.code,
-part_name:c.part_name,
-standard:c.standard,
+part_name:c.part_name||"",
+standard:c.standard||"",
 in_qty:inQty,
 out_qty:outQty,
 min_stock:min
@@ -579,14 +693,85 @@ btn.textContent="กำลังบันทึก...";
 try{
 const {error}=await db.from("spare_parts_inventory").insert(row);
 if(error)throw error;
+
 closeModal("addModal");
 showStatus("เพิ่ม PART เรียบร้อยแล้ว","success");
 await loadInventory();
+
 }catch(e){
 showStatus("เพิ่ม PART ไม่สำเร็จ: "+e.message,"error");
 }finally{
 btn.disabled=false;
 btn.textContent="บันทึก PART";
+}
+}
+
+/* =========================================
+   EXPORT EXCEL
+========================================= */
+
+function exportExcel(){
+if(!parts.length){
+showStatus("ไม่มีข้อมูลสำหรับส่งออก Excel","error");
+return;
+}
+
+try{
+const exportRows=parts.map(p=>({
+"Customer":customer(p),
+"Part No":partNo(p),
+"CODE":code(p),
+"Part Name":partName(p),
+"Standard":standard(p),
+"In":Number(p.in_qty||0),
+"Out":Number(p.out_qty||0),
+"Min":minStock(p)
+}));
+
+const headers=[
+"Customer",
+"Part No",
+"CODE",
+"Part Name",
+"Standard",
+"In",
+"Out",
+"Min"
+];
+
+const worksheet=XLSX.utils.json_to_sheet(exportRows,{header:headers});
+
+worksheet["!cols"]=[
+{wch:18},
+{wch:20},
+{wch:18},
+{wch:25},
+{wch:25},
+{wch:10},
+{wch:10},
+{wch:10}
+];
+
+worksheet["!autofilter"]={
+ref:XLSX.utils.encode_range({
+s:{r:0,c:0},
+e:{r:exportRows.length,c:headers.length-1}
+})
+};
+
+const workbook=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(workbook,worksheet,"Spare Parts");
+
+const today=new Date().toISOString().slice(0,10);
+const filename=`TNC_Spare_Parts_${today}.xlsx`;
+
+XLSX.writeFile(workbook,filename);
+
+showStatus(`ส่งออก Excel สำเร็จ ${exportRows.length} รายการ`,"success");
+
+}catch(e){
+console.error(e);
+showStatus("ส่งออก Excel ไม่สำเร็จ: "+e.message,"error");
 }
 }
 
@@ -625,6 +810,7 @@ function parseExcelRows(rows){
 if(!rows.length)throw new Error("ไม่พบข้อมูลใน Excel");
 
 const headers=Object.keys(rows[0]);
+
 const cols={
 customer:findColumn(headers,["Customer","Customer Name"]),
 part_no:findColumn(headers,["Part No","PartNo","Part Number","Part"]),
@@ -671,6 +857,7 @@ out_qty:toQty(cell(r,cols.out_qty)),
 min_stock:toQty(cell(r,cols.min_stock))
 });
 }
+
 return result;
 }
 
@@ -695,8 +882,12 @@ excelRows=parseExcelRows(raw);
 if(!excelRows.length)throw new Error("ไม่พบแถวที่มี Part No และ CODE");
 
 renderExcelPreview();
-$("importInfo").textContent=`อ่านข้อมูลสำเร็จ ${excelRows.length} แถว จากไฟล์ ${file.name}`;
+
+$("importInfo").textContent=
+`อ่านข้อมูลสำเร็จ ${excelRows.length} แถว จากไฟล์ ${file.name}`;
+
 $("importBtn").disabled=false;
+
 }catch(e){
 excelRows=[];
 $("importBtn").disabled=true;
@@ -707,7 +898,9 @@ $("previewArea").classList.add("hidden");
 
 function renderExcelPreview(){
 const preview=excelRows.slice(0,20);
+
 $("previewArea").classList.remove("hidden");
+
 $("previewArea").innerHTML=`
 <table>
 <thead><tr>
@@ -720,7 +913,9 @@ ${preview.map(r=>`<tr>
 <td>${esc(r.code)}</td>
 <td>${esc(r.part_name)}</td>
 <td>${esc(r.standard)}</td>
-<td>${r.in_qty}</td><td>${r.out_qty}</td><td>${r.min_stock}</td>
+<td>${r.in_qty}</td>
+<td>${r.out_qty}</td>
+<td>${r.min_stock}</td>
 </tr>`).join("")}
 </tbody></table>
 <p class="help">แสดงตัวอย่าง ${preview.length} จากทั้งหมด ${excelRows.length} แถว</p>`;
@@ -747,7 +942,7 @@ try{
 /* 1. Update CODE catalog */
 const catalogRows=uniqueBy(
 excelRows.filter(r=>r.code),
-r=>r.code
+r=>r.code.trim().toLowerCase()
 ).map(r=>({
 code:r.code,
 part_name:r.part_name||"",
@@ -757,8 +952,10 @@ updated_at:new Date().toISOString()
 
 for(let i=0;i<catalogRows.length;i+=100){
 const batch=catalogRows.slice(i,i+100);
+
 const {error}=await db.from("spare_part_catalog")
 .upsert(batch,{onConflict:"code"});
+
 if(error)throw new Error("บันทึก CODE ไม่สำเร็จ: "+error.message);
 }
 
@@ -772,7 +969,9 @@ r.part_name.trim().toLowerCase()
 ].join("|")
 );
 
-/* 3. Upsert inventory in batches */
+/* 3. Upsert inventory in batches
+   ignoreDuplicates ป้องกันการเขียนทับยอด IN/OUT เดิม
+*/
 let completed=0;
 const batchSize=50;
 
@@ -797,22 +996,27 @@ ignoreDuplicates:true
 if(error)throw new Error("บันทึกข้อมูลอะไหล่ไม่สำเร็จ: "+error.message);
 
 completed+=batch.length;
+
 const percent=Math.round(completed/inventoryRows.length*100);
 $("importProgressBar").style.width=percent+"%";
-$("importProgressText").textContent=`นำเข้าแล้ว ${completed} / ${inventoryRows.length} รายการ`;
+$("importProgressText").textContent=
+`นำเข้าแล้ว ${completed} / ${inventoryRows.length} รายการ`;
 }
 
 closeModal("importModal");
+
 showStatus(
 `นำเข้า Excel สำเร็จ ${inventoryRows.length} รายการ และอัปเดต CODE ${catalogRows.length} รายการ`,
 "success"
 );
+
 await loadInventory();
 
 }catch(e){
 console.error(e);
 showStatus("Import ไม่สำเร็จ: "+e.message,"error");
 $("importProgressText").textContent="เกิดข้อผิดพลาด: "+e.message;
+
 }finally{
 btn.disabled=false;
 btn.textContent="นำเข้าฐานข้อมูล";
@@ -825,24 +1029,29 @@ btn.textContent="นำเข้าฐานข้อมูล";
 
 async function openPartById(id){
 const p=parts.find(x=>String(x.id)===String(id));
+
 if(!p){
 showStatus("ไม่พบรายการ PART ID "+id,"error");
 return;
 }
+
 await showPart(p);
 }
 
 async function openPartByNo(no){
 const p=parts.find(x=>partNo(x)===no);
+
 if(!p){
 showStatus("ไม่พบ PART NO "+no,"error");
 return;
 }
+
 await showPart(p);
 }
 
 async function showPart(p){
 currentPart=p;
+
 $("inventoryPanel").classList.add("hidden");
 $("partPanel").classList.remove("hidden");
 $("pageMode").textContent="QR PART: "+partNo(p);
@@ -876,16 +1085,21 @@ $("partDetails").innerHTML=fields
 function selectMovement(id,type){
 const p=parts.find(x=>String(x.id)===String(id));
 if(!p)return;
+
 currentPart=p;
 openMovement(type);
 }
 
 function openMovement(type){
 if(!currentPart)return;
+
 $("movePartNo").value=partNo(currentPart);
 $("moveType").value=type;
 $("moveQty").value="";
-$("movementTitle").textContent=type==="IN"?"บันทึกรับเข้า (IN)":"บันทึกเบิกออก (OUT)";
+
+$("movementTitle").textContent=
+type==="IN"?"บันทึกรับเข้า (IN)":"บันทึกเบิกออก (OUT)";
+
 $("movementModal").classList.add("show");
 }
 
@@ -894,14 +1108,24 @@ if(!parts.length){
 showStatus("ยังไม่มี PART ในฐานข้อมูล","error");
 return;
 }
-const options=parts.map(p=>`${p.id} | ${partNo(p)} | ${code(p)} | ${partName(p)}`).join("\n");
-const id=prompt("กรอก ID ของรายการที่ต้องการบันทึก IN / OUT\n\n"+options);
+
+const options=parts.map(p=>
+`${p.id} | ${partNo(p)} | ${code(p)} | ${partName(p)}`
+).join("\n");
+
+const id=prompt(
+"กรอก ID ของรายการที่ต้องการบันทึก IN / OUT\n\n"+options
+);
+
 if(!id)return;
+
 const p=parts.find(x=>String(x.id)===String(id.trim()));
+
 if(!p){
 showStatus("ไม่พบ ID นี้ กรุณาตรวจสอบ ID ในรายการ","error");
 return;
 }
+
 currentPart=p;
 openMovement("IN");
 }
@@ -942,16 +1166,22 @@ const {error}=await db.from("spare_parts_inventory")
 if(error)throw error;
 
 closeModal("movementModal");
-showStatus(type==="IN"?"บันทึกรับเข้าเรียบร้อย":"บันทึกเบิกออกเรียบร้อย","success");
+
+showStatus(
+type==="IN"?"บันทึกรับเข้าเรียบร้อย":"บันทึกเบิกออกเรียบร้อย",
+"success"
+);
 
 const wasQR=new URLSearchParams(location.search).has("id");
 const id=currentPart.id;
+
 await loadInventory();
 
 if(wasQR)await openPartById(id);
 
 }catch(e){
 showStatus("บันทึกไม่สำเร็จ: "+e.message,"error");
+
 }finally{
 btn.disabled=false;
 btn.textContent="บันทึก";
@@ -968,9 +1198,11 @@ if(!p)return;
 
 const url=new URL(location.pathname,location.origin);
 url.searchParams.set("id",p.id);
+
 currentQRUrl=url.href;
 
 $("qrCanvas").innerHTML="";
+
 new QRCode($("qrCanvas"),{
 text:currentQRUrl,
 width:180,
@@ -980,6 +1212,7 @@ correctLevel:QRCode.CorrectLevel.M
 
 $("qrPartLabel").textContent=partNo(p)+" | "+code(p);
 $("qrUrlLabel").textContent=currentQRUrl;
+
 $("qrModal").classList.add("show");
 }
 
@@ -1002,8 +1235,10 @@ async function init(){
 const params=new URLSearchParams(location.search);
 const id=params.get("id");
 const oldNo=params.get("p");
+
 if(id)$("pageMode").textContent="กำลังเปิด PART ID "+id;
 else if(oldNo)$("pageMode").textContent="กำลังเปิด PART "+oldNo;
+
 await loadInventory();
 }
 
