@@ -4,131 +4,1918 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spare Parts Inventory | TNC</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <style>
-:root{--navy:#173653;--navy2:#214d70;--blue:#2878bd;--blue2:#eaf3fb;--bg:#f3f6fa;--line:#dce5ee;--text:#26384a;--muted:#7b8b9b;--green:#16865b;--greenbg:#e8f7ef;--red:#c83e43;--redbg:#fff0f0;--amber:#a66c08;--amberbg:#fff5df;--shadow:0 8px 28px rgba(25,55,82,.07)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Tahoma,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
-.topbar{background:linear-gradient(115deg,var(--navy),var(--navy2));color:#fff;padding:21px 24px}.top-inner,.container{max-width:1600px;margin:auto}.top-inner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:13px}.brand-mark{width:43px;height:43px;border:1px solid #ffffff55;border-radius:11px;display:grid;place-items:center;font-size:22px;background:#ffffff12}.brand h1{font-size:21px;letter-spacing:.3px;margin:0}.brand p{font-size:12px;color:#d4e2ee;margin:5px 0 0}.top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.top-pill{font-size:11px;border:1px solid #ffffff44;background:#ffffff12;padding:7px 10px;border-radius:20px;color:#e8f2fa}
-.container{padding:21px 16px 45px}.status{display:none;padding:12px 15px;border-radius:9px;margin-bottom:15px;font-size:13px;line-height:1.5}.status.show{display:block}.status.success{background:var(--greenbg);color:#147747}.status.error{background:var(--redbg);color:#b83232}.status.info{background:var(--blue2);color:#245b89}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:17px}.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 17px;box-shadow:var(--shadow);position:relative;overflow:hidden}.stat:after{content:"";position:absolute;width:5px;left:0;top:0;bottom:0;background:var(--blue)}.stat.green:after{background:var(--green)}.stat.amber:after{background:#d49a2c}.stat.red:after{background:var(--red)}.stat-label{font-size:12px;color:var(--muted)}.stat-value{font-size:27px;font-weight:800;color:var(--navy);margin-top:7px;letter-spacing:.2px}.stat-note{font-size:11px;color:#9aa7b4;margin-top:3px}
-.panel{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:17px;overflow:hidden}.panel-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.panel-head h2{font-size:15px;color:var(--navy);margin:0}.panel-head small{font-size:11px;color:var(--muted)}.panel-body{padding:16px 18px}.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 180px auto auto auto;gap:9px;align-items:end}.field label{display:block;font-size:11px;font-weight:700;color:#586b7e;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #cdd8e2;border-radius:8px;background:#fff;color:var(--text);padding:10px 11px;font-size:13px;outline:none}.field textarea{min-height:78px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2878bd18}.btn{border:0;border-radius:8px;padding:10px 13px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;transition:.15s}.btn:hover{filter:brightness(.97);transform:translateY(-1px)}.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}.primary{background:var(--blue);color:#fff}.dark{background:var(--navy);color:#fff}.success-btn{background:var(--green);color:#fff}.soft{background:#edf2f6;color:#40566b}.danger-btn{background:var(--redbg);color:var(--red)}.outline{background:#fff;color:var(--navy);border:1px solid var(--line)}.mini{padding:7px 9px;font-size:11px}
-.table-wrap{overflow:auto;border-top:1px solid #edf1f5}table{width:100%;border-collapse:collapse;min-width:1190px}th{position:sticky;top:0;background:#edf3f8;color:#455d73;text-align:left;font-size:11px;padding:12px 10px;white-space:nowrap;z-index:1}td{padding:10px;border-bottom:1px solid #edf1f5;font-size:12px;white-space:nowrap;vertical-align:middle}tbody tr:hover{background:#f8fbfe}.partno{font-weight:800;color:var(--navy)}.qty{text-align:center;font-weight:700;font-variant-numeric:tabular-nums}.muted{color:var(--muted)}.badge{display:inline-block;padding:5px 8px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.15px}.normal{background:var(--greenbg);color:#147747}.low{background:var(--amberbg);color:#946200}.out{background:var(--redbg);color:#b83232}.empty{text-align:center;color:#91a0ae;padding:30px!important}.table-foot{padding:11px 16px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.hidden{display:none!important}.view{display:none}.view.active{display:block}.detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.detail{background:#f7f9fc;border:1px solid var(--line);border-radius:9px;padding:12px}.detail small{display:block;color:var(--muted);font-size:10px;margin-bottom:6px}.detail b{font-size:13px;color:var(--navy);word-break:break-word}.detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.section-title{font-size:13px;font-weight:800;color:var(--navy);margin:19px 0 10px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal{display:none;position:fixed;inset:0;background:#10243899;z-index:100;align-items:center;justify-content:center;padding:15px}.modal.show{display:flex}.modal-card{width:min(720px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:13px;box-shadow:0 25px 70px #0003}.modal-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}.modal-head strong{font-size:14px;color:var(--navy)}.modal-body{padding:18px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.full{grid-column:1/-1}.modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:17px}.hint{font-size:11px;color:var(--muted);line-height:1.55;margin-top:6px}.qr-layout{display:flex;align-items:center;gap:22px;flex-wrap:wrap}.qr-paper{padding:16px;border:1px solid var(--line);border-radius:10px;text-align:center;min-width:210px;background:#fff}.qr-paper b{display:block;margin-top:9px;color:var(--navy)}.qr-paper small{display:block;max-width:220px;overflow-wrap:anywhere;color:var(--muted);font-size:9px;margin-top:5px}.history-table{min-width:760px}
-@media(max-width:1000px){.toolbar{grid-template-columns:1fr 1fr}.toolbar .search{grid-column:1/-1}.detail-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.topbar{padding:16px}.brand h1{font-size:17px}.container{padding:13px 9px 30px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat{padding:13px}.stat-value{font-size:23px}.panel-body{padding:13px}.panel-head{padding:13px}.toolbar{grid-template-columns:1fr 1fr}.toolbar .search{grid-column:1/-1}.toolbar .btn{width:100%}.form-grid,.two-col{grid-template-columns:1fr}.full{grid-column:auto}.detail-grid{grid-template-columns:1fr 1fr}.top-right{display:none}}
-@media print{body *{visibility:hidden!important}.qr-paper,.qr-paper *{visibility:visible!important}.qr-paper{position:absolute;left:20px;top:20px;border:0!important}.modal{background:#fff!important}}
+:root{
+--navy:#173653;--navy2:#214d70;--blue:#2878bd;--blue2:#eaf3fb;
+--bg:#f3f6fa;--line:#dce5ee;--text:#26384a;--muted:#7b8b9b;
+--green:#16865b;--greenbg:#e8f7ef;--red:#c83e43;--redbg:#fff0f0;
+--amber:#a66c08;--amberbg:#fff5df;--shadow:0 8px 28px rgba(25,55,82,.07)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Tahoma,sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+
+.topbar{background:linear-gradient(115deg,var(--navy),var(--navy2));color:#fff;padding:21px 24px}
+.top-inner,.container{max-width:1600px;margin:auto}
+.top-inner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:13px}
+.brand-mark{width:43px;height:43px;border:1px solid #ffffff55;border-radius:11px;display:grid;place-items:center;font-size:22px;background:#ffffff12}
+.brand h1{font-size:21px;letter-spacing:.3px;margin:0}
+.brand p{font-size:12px;color:#d4e2ee;margin:5px 0 0}
+.top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.top-pill{font-size:11px;border:1px solid #ffffff44;background:#ffffff12;padding:7px 10px;border-radius:20px;color:#e8f2fa}
+
+.container{padding:21px 16px 45px}
+.status{display:none;padding:12px 15px;border-radius:9px;margin-bottom:15px;font-size:13px;line-height:1.5}
+.status.show{display:block}
+.status.success{background:var(--greenbg);color:#147747}
+.status.error{background:var(--redbg);color:#b83232}
+.status.info{background:var(--blue2);color:#245b89}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:17px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 17px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat:after{content:"";position:absolute;width:5px;left:0;top:0;bottom:0;background:var(--blue)}
+.stat.green:after{background:var(--green)}
+.stat.amber:after{background:#d49a2c}
+.stat.red:after{background:var(--red)}
+.stat-label{font-size:12px;color:var(--muted)}
+.stat-value{font-size:27px;font-weight:800;color:var(--navy);margin-top:7px;letter-spacing:.2px}
+.stat-note{font-size:11px;color:#9aa7b4;margin-top:3px}
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:17px;overflow:hidden}
+.panel-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.panel-head h2{font-size:15px;color:var(--navy);margin:0}
+.panel-head small{font-size:11px;color:var(--muted)}
+.panel-body{padding:16px 18px}
+
+.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 180px auto auto auto;gap:9px;align-items:end}
+.field label{display:block;font-size:11px;font-weight:700;color:#586b7e;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;border:1px solid #cdd8e2;border-radius:8px;background:#fff;color:var(--text);padding:10px 11px;font-size:13px;outline:none}
+.field textarea{min-height:78px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2878bd18}
+
+.btn{border:0;border-radius:8px;padding:10px 13px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;transition:.15s}
+.btn:hover{filter:brightness(.97);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.primary{background:var(--blue);color:#fff}
+.dark{background:var(--navy);color:#fff}
+.success-btn{background:var(--green);color:#fff}
+.soft{background:#edf2f6;color:#40566b}
+.danger-btn{background:var(--redbg);color:var(--red)}
+.outline{background:#fff;color:var(--navy);border:1px solid var(--line)}
+.mini{padding:7px 9px;font-size:11px}
+
+.table-wrap{overflow:auto;border-top:1px solid #edf1f5}
+table{width:100%;border-collapse:collapse;min-width:1190px}
+th{position:sticky;top:0;background:#edf3f8;color:#455d73;text-align:left;font-size:11px;padding:12px 10px;white-space:nowrap;z-index:1}
+td{padding:10px;border-bottom:1px solid #edf1f5;font-size:12px;white-space:nowrap;vertical-align:middle}
+tbody tr:hover{background:#f8fbfe}
+.partno{font-weight:800;color:var(--navy)}
+.qty{text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.badge{display:inline-block;padding:5px 8px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.15px}
+.normal{background:var(--greenbg);color:#147747}
+.low{background:var(--amberbg);color:#946200}
+.out{background:var(--redbg);color:#b83232}
+.empty{text-align:center;color:#91a0ae;padding:30px!important}
+.table-foot{padding:11px 16px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+.hidden{display:none!important}
+.view{display:none}
+.view.active{display:block}
+
+.detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.detail{background:#f7f9fc;border:1px solid var(--line);border-radius:9px;padding:12px}
+.detail small{display:block;color:var(--muted);font-size:10px;margin-bottom:6px}
+.detail b{font-size:13px;color:var(--navy);word-break:break-word}
+.detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.section-title{font-size:13px;font-weight:800;color:var(--navy);margin:19px 0 10px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.detail-code-picker{max-width:440px;margin-bottom:16px}
+.detail-code-picker select{font-weight:700;color:var(--navy);background:#f8fbfe}
+
+.modal{display:none;position:fixed;inset:0;background:#10243899;z-index:100;align-items:center;justify-content:center;padding:15px}
+.modal.show{display:flex}
+.modal-card{width:min(720px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:13px;box-shadow:0 25px 70px #0003}
+.modal-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.modal-head strong{font-size:14px;color:var(--navy)}
+.modal-body{padding:18px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.full{grid-column:1/-1}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:17px}
+.hint{font-size:11px;color:var(--muted);line-height:1.55;margin-top:6px}
+.qr-layout{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.qr-paper{padding:16px;border:1px solid var(--line);border-radius:10px;text-align:center;min-width:210px;background:#fff}
+.qr-paper b{display:block;margin-top:9px;color:var(--navy)}
+.qr-paper small{display:block;max-width:220px;overflow-wrap:anywhere;color:var(--muted);font-size:9px;margin-top:5px}
+.history-table{min-width:760px}
+
+@media(max-width:1000px){
+.toolbar{grid-template-columns:1fr 1fr}
+.toolbar .search{grid-column:1/-1}
+.detail-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:650px){
+.topbar{padding:16px}
+.brand h1{font-size:17px}
+.container{padding:13px 9px 30px}
+.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.stat{padding:13px}
+.stat-value{font-size:23px}
+.panel-body{padding:13px}
+.panel-head{padding:13px}
+.toolbar{grid-template-columns:1fr 1fr}
+.toolbar .search{grid-column:1/-1}
+.toolbar .btn{width:100%}
+.form-grid,.two-col{grid-template-columns:1fr}
+.full{grid-column:auto}
+.detail-grid{grid-template-columns:1fr 1fr}
+.top-right{display:none}
+}
+@media print{
+body *{visibility:hidden!important}
+.qr-paper,.qr-paper *{visibility:visible!important}
+.qr-paper{position:absolute;left:20px;top:20px;border:0!important}
+.modal{background:#fff!important}
+}
 </style>
 </head>
+
 <body>
-<header class="topbar"><div class="top-inner"><div class="brand"><div class="brand-mark">▦</div><div><h1>MOLD SPARE PARTS INVENTORY</h1><p>TNC | ระบบควบคุมอะไหล่แม่พิมพ์และ QR ประจำ PART</p></div></div><div class="top-right"><span class="top-pill">INVENTORY MANAGEMENT</span><span class="top-pill" id="connectionLabel">กำลังเชื่อมต่อ...</span></div></div></header>
+
+<header class="topbar">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="brand-mark">▦</div>
+      <div>
+        <h1>MOLD SPARE PARTS INVENTORY</h1>
+        <p>TNC | ระบบควบคุมอะไหล่แม่พิมพ์และ QR ประจำ PART</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <span class="top-pill">INVENTORY MANAGEMENT</span>
+      <span class="top-pill" id="connectionLabel">กำลังเชื่อมต่อ...</span>
+    </div>
+  </div>
+</header>
+
 <main class="container">
+
 <div id="status" class="status"></div>
+
 <section id="inventoryView" class="view active">
- <div class="stats">
-  <div class="stat"><div class="stat-label">จำนวน PART ทั้งหมด</div><div class="stat-value" id="statParts">0</div><div class="stat-note">รายการในฐานข้อมูล PART</div></div>
-  <div class="stat green"><div class="stat-label">ยอดคงเหลือรวม</div><div class="stat-value" id="statBalance">0</div><div class="stat-note">จำนวนอะไหล่คงเหลือ</div></div>
-  <div class="stat amber"><div class="stat-label">ต่ำกว่าหรือเท่ากับ MIN</div><div class="stat-value" id="statLow">0</div><div class="stat-note">รายการที่ควรตรวจสอบ</div></div>
-  <div class="stat red"><div class="stat-label">อะไหล่หมด</div><div class="stat-value" id="statOut">0</div><div class="stat-note">Balance เท่ากับ 0 หรือติดลบ</div></div>
- </div>
- <section class="panel"><div class="panel-head"><h2>รายการอะไหล่ทั้งหมด</h2><small id="loadLabel">กำลังโหลดข้อมูล...</small></div>
-  <div class="panel-body"><div class="toolbar">
-   <div class="field search"><label>ค้นหา PART NO / CUSTOMER / CODE / PART NAME</label><input id="searchInput" placeholder="พิมพ์คำค้นหา..."></div>
-   <div class="field"><label>กรองสถานะ</label><select id="statusFilter"><option value="ALL">ทุกสถานะ</option><option value="NORMAL">NORMAL</option><option value="LOW STOCK">LOW STOCK</option><option value="OUT OF STOCK">OUT OF STOCK</option></select></div>
-   <button class="btn primary" id="refreshBtn">↻ รีเฟรช</button><button class="btn dark" id="movementBtn">＋ บันทึก IN / OUT</button><button class="btn soft" id="historyBtn">ประวัติทั้งหมด</button>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">จำนวน PART ทั้งหมด</div>
+      <div class="stat-value" id="statParts">0</div>
+      <div class="stat-note">รายการในฐานข้อมูล PART</div>
+    </div>
+    <div class="stat green">
+      <div class="stat-label">ยอดคงเหลือรวม</div>
+      <div class="stat-value" id="statBalance">0</div>
+      <div class="stat-note">จำนวนอะไหล่คงเหลือ</div>
+    </div>
+    <div class="stat amber">
+      <div class="stat-label">ต่ำกว่าหรือเท่ากับ MIN</div>
+      <div class="stat-value" id="statLow">0</div>
+      <div class="stat-note">รายการที่ควรตรวจสอบ</div>
+    </div>
+    <div class="stat red">
+      <div class="stat-label">อะไหล่หมด</div>
+      <div class="stat-value" id="statOut">0</div>
+      <div class="stat-note">Balance เท่ากับ 0 หรือติดลบ</div>
+    </div>
   </div>
-  <div class="detail-actions"><button class="btn outline" id="exportBtn">⇩ ส่งออก Excel</button><button class="btn outline" id="importBtn">⇧ นำเข้า Excel (IN/OUT)</button><input id="importFile" type="file" accept=".xlsx,.xls,.csv" hidden><span class="hint">นำเข้า Excel สำหรับบันทึกรายการ IN/OUT โดยใช้คอลัมน์ Part No, Type, Quantity, Date, Remark</span></div>
-  </div>
-  <div class="table-wrap"><table><thead><tr><th>No</th><th>Customer</th><th>Part No</th><th>CODE</th><th>Part Name</th><th id="standardHeader">Standard</th><th>In</th><th>Out</th><th>Balance</th><th>Min</th><th>Status</th><th>จัดการ</th></tr></thead><tbody id="inventoryBody"><tr><td colspan="12" class="empty">กำลังโหลดข้อมูล...</td></tr></tbody></table></div>
-  <div class="table-foot"><span id="resultCount">0 รายการ</span><span>ยอดคงเหลือคำนวณจากประวัติ IN/OUT</span></div>
- </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>รายการอะไหล่ทั้งหมด</h2>
+      <small id="loadLabel">กำลังโหลดข้อมูล...</small>
+    </div>
+
+    <div class="panel-body">
+      <div class="toolbar">
+        <div class="field search">
+          <label>ค้นหา PART NO / CUSTOMER / CODE / PART NAME</label>
+          <input id="searchInput" placeholder="พิมพ์คำค้นหา...">
+        </div>
+
+        <div class="field">
+          <label>กรองสถานะ</label>
+          <select id="statusFilter">
+            <option value="ALL">ทุกสถานะ</option>
+            <option value="NORMAL">NORMAL</option>
+            <option value="LOW STOCK">LOW STOCK</option>
+            <option value="OUT OF STOCK">OUT OF STOCK</option>
+          </select>
+        </div>
+
+        <button class="btn primary" id="refreshBtn">↻ รีเฟรช</button>
+        <button class="btn dark" id="movementBtn">＋ บันทึก IN / OUT</button>
+        <button class="btn soft" id="historyBtn">ประวัติทั้งหมด</button>
+      </div>
+
+      <div class="detail-actions">
+        <button class="btn outline" id="exportBtn">⇩ ส่งออก Excel</button>
+        <button class="btn outline" id="importBtn">⇧ นำเข้า Excel (IN/OUT)</button>
+        <input id="importFile" type="file" accept=".xlsx,.xls,.csv" hidden>
+        <span class="hint">นำเข้า Excel สำหรับบันทึกรายการ IN/OUT โดยใช้คอลัมน์ Part No, Type, Quantity, Date, Remark</span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Customer</th>
+            <th>Part No</th>
+            <th>CODE</th>
+            <th>Part Name</th>
+            <th id="standardHeader">Standard</th>
+            <th>In</th>
+            <th>Out</th>
+            <th>Balance</th>
+            <th>Min</th>
+            <th>Status</th>
+            <th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryBody">
+          <tr><td colspan="12" class="empty">กำลังโหลดข้อมูล...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-foot">
+      <span id="resultCount">0 รายการ</span>
+      <span>ยอดคงเหลือคำนวณจากประวัติ IN/OUT</span>
+    </div>
+  </section>
 </section>
+
+
+<!-- PART DETAIL -->
 <section id="partView" class="view">
- <section class="panel"><div class="panel-head"><h2>รายละเอียด PART</h2><button class="btn soft mini" id="backInventoryBtn">← กลับหน้ารวม</button></div><div class="panel-body"><div id="partDetails" class="detail-grid"></div><div class="detail-actions"><button class="btn success-btn" id="detailInBtn">＋ รับเข้า (IN)</button><button class="btn primary" id="detailOutBtn">− เบิกออก (OUT)</button><button class="btn soft" id="detailQrBtn">▦ QR Code</button></div><div class="section-title">ประวัติการเคลื่อนไหวของ PART นี้</div><div class="table-wrap"><table class="history-table"><thead><tr><th>วันที่</th><th>ประเภท</th><th>จำนวน</th><th>Remark</th><th>บันทึกเมื่อ</th></tr></thead><tbody id="partHistoryBody"><tr><td colspan="5" class="empty">กำลังโหลด...</td></tr></tbody></table></div></div></section>
+  <section class="panel">
+
+    <div class="panel-head">
+      <h2>รายละเอียด PART</h2>
+    </div>
+
+    <div class="panel-body">
+
+      <div class="field detail-code-picker">
+        <label>เลือก CODE</label>
+        <select id="detailCodeSelect">
+          <option value="">กำลังโหลด CODE...</option>
+        </select>
+        <div class="hint">เลือก CODE เพื่อดู Part Name, Standard และ Standard Min ของ CODE นั้น</div>
+      </div>
+
+      <div id="partDetails" class="detail-grid"></div>
+
+      <div class="detail-actions">
+        <button class="btn success-btn" id="detailInBtn">＋ รับเข้า (IN)</button>
+        <button class="btn primary" id="detailOutBtn">− เบิกออก (OUT)</button>
+        <button class="btn soft" id="detailQrBtn">▦ QR Code</button>
+      </div>
+
+      <div class="section-title">ประวัติการเคลื่อนไหวของ PART นี้</div>
+
+      <div class="table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>ประเภท</th>
+              <th>จำนวน</th>
+              <th>Remark</th>
+              <th>บันทึกเมื่อ</th>
+            </tr>
+          </thead>
+          <tbody id="partHistoryBody">
+            <tr><td colspan="5" class="empty">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
 </section>
-<section id="historyView" class="view"><section class="panel"><div class="panel-head"><h2>ประวัติการรับเข้า / เบิกออกทั้งหมด</h2><button class="btn soft mini" id="backFromHistoryBtn">← กลับหน้ารวม</button></div><div class="panel-body"><div class="toolbar" style="grid-template-columns:minmax(220px,1fr) 180px auto"><div class="field search"><label>ค้นหา PART NO / REMARK</label><input id="historySearch" placeholder="ค้นหาประวัติ..."></div><div class="field"><label>ประเภท</label><select id="historyType"><option value="ALL">ทั้งหมด</option><option value="IN">IN - รับเข้า</option><option value="OUT">OUT - เบิกออก</option></select></div><button class="btn outline" id="exportHistoryBtn">⇩ ส่งออกประวัติ</button></div></div><div class="table-wrap"><table class="history-table"><thead><tr><th>วันที่</th><th>Part No</th><th>CODE</th><th>Part Name</th><th>ประเภท</th><th>จำนวน</th><th>Remark</th><th>บันทึกเมื่อ</th></tr></thead><tbody id="allHistoryBody"><tr><td colspan="8" class="empty">กำลังโหลด...</td></tr></tbody></table></div><div class="table-foot"><span id="historyCount">0 รายการ</span></div></section></section>
+
+
+<!-- HISTORY -->
+<section id="historyView" class="view">
+  <section class="panel">
+
+    <div class="panel-head">
+      <h2>ประวัติการรับเข้า / เบิกออกทั้งหมด</h2>
+      <button class="btn soft mini" id="backFromHistoryBtn">← กลับหน้ารวม</button>
+    </div>
+
+    <div class="panel-body">
+      <div class="toolbar" style="grid-template-columns:minmax(220px,1fr) 180px auto">
+
+        <div class="field search">
+          <label>ค้นหา PART NO / REMARK</label>
+          <input id="historySearch" placeholder="ค้นหาประวัติ...">
+        </div>
+
+        <div class="field">
+          <label>ประเภท</label>
+          <select id="historyType">
+            <option value="ALL">ทั้งหมด</option>
+            <option value="IN">IN - รับเข้า</option>
+            <option value="OUT">OUT - เบิกออก</option>
+          </select>
+        </div>
+
+        <button class="btn outline" id="exportHistoryBtn">⇩ ส่งออกประวัติ</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>วันที่</th>
+            <th>Part No</th>
+            <th>CODE</th>
+            <th>Part Name</th>
+            <th>ประเภท</th>
+            <th>จำนวน</th>
+            <th>Remark</th>
+            <th>บันทึกเมื่อ</th>
+          </tr>
+        </thead>
+        <tbody id="allHistoryBody">
+          <tr><td colspan="8" class="empty">กำลังโหลด...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-foot">
+      <span id="historyCount">0 รายการ</span>
+    </div>
+
+  </section>
+</section>
+
 </main>
 
-<div class="modal" id="movementModal"><div class="modal-card"><div class="modal-head"><strong id="movementTitle">บันทึก IN / OUT</strong><button class="btn soft mini" data-close="movementModal">ปิด ✕</button></div><div class="modal-body"><div class="form-grid">
- <div class="field full"><label>เลือก PART / CODE *</label><select id="movePartSelect"><option value="">กำลังโหลด PART...</option></select><div class="hint">เลือก CODE แล้วระบบจะแสดง Part Name และ Standard ของ PART ที่ตรงกันโดยอัตโนมัติ</div></div>
- <div class="field"><label>Part Name</label><input id="movePartName" readonly></div><div class="field" id="moveStandardWrap"><label>Standard</label><input id="moveStandard" readonly></div>
- <div class="field"><label>ประเภท *</label><select id="moveType"><option value="IN">IN - รับเข้า</option><option value="OUT">OUT - เบิกออก</option></select></div><div class="field"><label>จำนวน *</label><input id="moveQty" type="number" min="1" step="1" placeholder="ระบุจำนวน"></div>
- <div class="field"><label>วันที่ *</label><input id="moveDate" type="date"></div><div class="field"><label>Remark</label><input id="moveRemark" placeholder="หมายเหตุ (ถ้ามี)"></div>
- </div><div class="modal-actions"><button class="btn soft" data-close="movementModal">ยกเลิก</button><button class="btn success-btn" id="saveMoveBtn">บันทึกข้อมูล</button></div></div></div></div>
-<div class="modal" id="qrModal"><div class="modal-card"><div class="modal-head"><strong>QR CODE ประจำ PART</strong><button class="btn soft mini" data-close="qrModal">ปิด ✕</button></div><div class="modal-body"><div class="qr-layout"><div class="qr-paper" id="qrPaper"><div id="qrCanvas"></div><b id="qrPartLabel"></b><small id="qrUrlLabel"></small></div><div style="flex:1;min-width:210px"><p style="font-size:13px;line-height:1.7">QR Code นี้เชื่อมโยงกับ PART เพียงรายการเดียว เมื่อสแกนจะเปิดหน้ารายละเอียด PART นั้นโดยตรง</p><button class="btn primary" id="printQrBtn">พิมพ์ QR Code</button></div></div></div></div></div>
-<div class="modal" id="importModal"><div class="modal-card"><div class="modal-head"><strong>รูปแบบไฟล์นำเข้า Excel</strong><button class="btn soft mini" data-close="importModal">ปิด ✕</button></div><div class="modal-body"><p style="font-size:13px;line-height:1.7">ไฟล์ Excel ต้องมีหัวคอลัมน์ตามนี้ (ตัวพิมพ์เล็ก/ใหญ่ไม่สำคัญ):</p><div class="table-wrap"><table style="min-width:500px"><thead><tr><th>Part No</th><th>Type</th><th>Quantity</th><th>Date</th><th>Remark</th></tr></thead><tbody><tr><td>606402600C</td><td>IN</td><td>10</td><td>2026-11-27</td><td>รับเข้า</td></tr><tr><td>606402600C</td><td>OUT</td><td>2</td><td>2026-11-27</td><td>เบิกใช้งาน</td></tr></tbody></table></div><div class="hint">ระบบจะตรวจสอบ PART NO, ประเภท และจำนวนก่อนบันทึก หากมีแถวผิดพลาดจะแจ้งเลขแถวให้ทราบ</div><div class="modal-actions"><button class="btn outline" id="downloadTemplateBtn">ดาวน์โหลดไฟล์ตัวอย่าง</button><button class="btn primary" id="chooseImportBtn">เลือกไฟล์ Excel</button></div></div></div></div>
+
+<!-- MOVEMENT MODAL -->
+<div class="modal" id="movementModal">
+  <div class="modal-card">
+
+    <div class="modal-head">
+      <strong id="movementTitle">บันทึก IN / OUT</strong>
+      <button class="btn soft mini" data-close="movementModal">ปิด ✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid">
+
+        <div class="field full">
+          <label>เลือก PART / CODE *</label>
+          <select id="movePartSelect">
+            <option value="">กำลังโหลด PART...</option>
+          </select>
+          <div class="hint">เลือก PART เพื่อบันทึกการรับเข้าและเบิกออก</div>
+        </div>
+
+        <div class="field">
+          <label>Part Name</label>
+          <input id="movePartName" readonly>
+        </div>
+
+        <div class="field" id="moveStandardWrap">
+          <label>Standard</label>
+          <input id="moveStandard" readonly>
+        </div>
+
+        <div class="field">
+          <label>ประเภท *</label>
+          <select id="moveType">
+            <option value="IN">IN - รับเข้า</option>
+            <option value="OUT">OUT - เบิกออก</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>จำนวน *</label>
+          <input id="moveQty" type="number" min="1" step="1" placeholder="ระบุจำนวน">
+        </div>
+
+        <div class="field">
+          <label>วันที่ *</label>
+          <input id="moveDate" type="date">
+        </div>
+
+        <div class="field">
+          <label>Remark</label>
+          <input id="moveRemark" placeholder="หมายเหตุ (ถ้ามี)">
+        </div>
+
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn soft" data-close="movementModal">ยกเลิก</button>
+        <button class="btn success-btn" id="saveMoveBtn">บันทึกข้อมูล</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- QR MODAL -->
+<div class="modal" id="qrModal">
+  <div class="modal-card">
+
+    <div class="modal-head">
+      <strong>QR CODE ประจำ PART</strong>
+      <button class="btn soft mini" data-close="qrModal">ปิด ✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="qr-layout">
+
+        <div class="qr-paper" id="qrPaper">
+          <div id="qrCanvas"></div>
+          <b id="qrPartLabel"></b>
+          <small id="qrUrlLabel"></small>
+        </div>
+
+        <div style="flex:1;min-width:210px">
+          <p style="font-size:13px;line-height:1.7">
+            QR Code นี้เชื่อมโยงกับ PART เพียงรายการเดียว
+            เมื่อสแกนจะเปิดหน้ารายละเอียด PART นั้นโดยตรง
+          </p>
+          <button class="btn primary" id="printQrBtn">พิมพ์ QR Code</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- IMPORT MODAL -->
+<div class="modal" id="importModal">
+  <div class="modal-card">
+
+    <div class="modal-head">
+      <strong>รูปแบบไฟล์นำเข้า Excel</strong>
+      <button class="btn soft mini" data-close="importModal">ปิด ✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p style="font-size:13px;line-height:1.7">
+        ไฟล์ Excel ต้องมีหัวคอลัมน์ตามนี้ (ตัวพิมพ์เล็ก/ใหญ่ไม่สำคัญ):
+      </p>
+
+      <div class="table-wrap">
+        <table style="min-width:500px">
+          <thead>
+            <tr>
+              <th>Part No</th>
+              <th>Type</th>
+              <th>Quantity</th>
+              <th>Date</th>
+              <th>Remark</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>606402600C</td>
+              <td>IN</td>
+              <td>10</td>
+              <td>2026-11-27</td>
+              <td>รับเข้า</td>
+            </tr>
+            <tr>
+              <td>606402600C</td>
+              <td>OUT</td>
+              <td>2</td>
+              <td>2026-11-27</td>
+              <td>เบิกใช้งาน</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hint">
+        ระบบจะตรวจสอบ PART NO, ประเภท และจำนวนก่อนบันทึก
+        หากมีแถวผิดพลาดจะแจ้งเลขแถวให้ทราบ
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn outline" id="downloadTemplateBtn">ดาวน์โหลดไฟล์ตัวอย่าง</button>
+        <button class="btn primary" id="chooseImportBtn">เลือกไฟล์ Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script>
-// TNC Spare Parts - uses the existing shared PART master and a separate movement ledger.
+// ==========================================
+// TNC SPARE PARTS INVENTORY
+// ==========================================
+
 const SUPABASE_URL = 'https://enmzfxdswzhatvcenrds.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_DkoWB0IDDgodellT5vgcLQ_YdqIhKdI';
+
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const $ = id => document.getElementById(id);
-let parts = [], movements = [], currentPart = null, currentQRUrl = '';
-const MASTER_TABLE = 'part_database', INVENTORY_VIEW = 'spare_parts_inventory', MOVEMENT_TABLE = 'spare_stock_movements';
+
+let parts = [];
+let masterParts = [];
+let movements = [];
+
+let currentPart = null;
+let currentCodeRows = [];
+let selectedCodePart = null;
+let currentQRUrl = '';
+
+const MASTER_TABLE = 'part_database';
+const INVENTORY_VIEW = 'spare_parts_inventory';
+const MOVEMENT_TABLE = 'spare_stock_movements';
+
 const ALIASES = {
- partNo:['part_no','PART_NO','partNo','part_number','partnumber'], customer:['customer','CUSTOMER','customer_name'],
- code:['code','CODE','part_code','partCode'], name:['part_name','PART_NAME','partName','name'], standard:['standard','Standard','STANDARD'], min:['min_stock','min','minimum_stock']
+  partNo: [
+    'part_no','PART_NO','partNo','part_number','partnumber'
+  ],
+  customer: [
+    'customer','CUSTOMER','customer_name'
+  ],
+  code: [
+    'code','CODE','part_code','partCode'
+  ],
+  name: [
+    'part_name','PART_NAME','partName','name'
+  ],
+  standard: [
+    'standard','Standard','STANDARD'
+  ],
+  min: [
+    'standard_min',
+    'standardMin',
+    'STANDARD_MIN',
+    'standard_min_qty',
+    'min_qty',
+    'min_stock',
+    'min',
+    'minimum_stock'
+  ]
 };
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
-function getv(row,keys){for(const k of keys){if(row&&row[k]!==undefined&&row[k]!==null)return String(row[k]).trim();}return '';}
-function partNo(p){return getv(p,ALIASES.partNo)} function customer(p){return getv(p,ALIASES.customer)} function code(p){return getv(p,ALIASES.code)} function partName(p){return getv(p,ALIASES.name)} function standard(p){return getv(p,ALIASES.standard)}
-function minStock(p){const n=Number(p?.min_stock??p?.min??p?.minimum_stock??0);return Number.isFinite(n)?n:0;}
-function balance(p){return Number(p?.balance??(Number(p?.in_qty||0)-Number(p?.out_qty||0)));}
-function state(p){const b=balance(p);if(b<=0)return{text:'OUT OF STOCK',cls:'out'};if(b<=minStock(p))return{text:'LOW STOCK',cls:'low'};return{text:'NORMAL',cls:'normal'};}
-function today(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
-function fmtDate(v){if(!v)return '-';const s=String(v).slice(0,10);const a=s.split('-');return a.length===3?`${a[2]}/${a[1]}/${a[0]}`:s;}
-function showStatus(msg,type='success'){const e=$('status');e.className='status show '+type;e.textContent=msg;window.scrollTo({top:0,behavior:'smooth'});} function hideStatus(){$('status').className='status';$('status').textContent='';}
-function showView(name){['inventoryView','partView','historyView'].forEach(id=>$(id).classList.toggle('active',id===name));window.scrollTo({top:0,behavior:'smooth'});}
-function openModal(id){$(id).classList.add('show')} function closeModal(id){$(id).classList.remove('show')}
-function setConnection(ok,msg){$('connectionLabel').textContent=msg;$('connectionLabel').style.background=ok?'#16865b55':'#c83e4355';}
-function sortParts(a,b){return partNo(a).localeCompare(partNo(b),undefined,{numeric:true});}
-async function loadInventory(){
- hideStatus();$('loadLabel').textContent='กำลังโหลดข้อมูล...';setConnection(false,'กำลังเชื่อมต่อ...');
- try{
-  const {data,error}=await db.from(INVENTORY_VIEW).select('*').order('part_no',{ascending:true});
-  if(error)throw error;
-  parts=(data||[]).filter(p=>partNo(p)).sort(sortParts);
-  renderInventory();updateStats();populatePartSelect();$('loadLabel').textContent=`โหลดแล้ว ${parts.length.toLocaleString()} PART`;setConnection(true,'เชื่อมต่อฐานข้อมูลแล้ว');
-  const qr=new URLSearchParams(location.search).get('p');if(qr)await openPartByNo(qr);
- }catch(err){console.error(err);$('loadLabel').textContent='โหลดข้อมูลไม่สำเร็จ';setConnection(false,'เชื่อมต่อไม่สำเร็จ');showStatus('โหลดข้อมูลไม่สำเร็จ: '+(err.message||err)+' | ตรวจสอบว่ารัน SQL สำหรับ spare_parts_inventory แล้ว และ part_database มีคอลัมน์ part_no','error');}
+
+
+// ==========================================
+// COMMON FUNCTIONS
+// ==========================================
+
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g,c=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#039;'
+  }[c]));
 }
-function renderInventory(){
- const q=$('searchInput').value.trim().toLowerCase(),f=$('statusFilter').value;
- const list=parts.filter(p=>{const hay=[partNo(p),customer(p),code(p),partName(p),standard(p)].join(' ').toLowerCase();return hay.includes(q)&&(f==='ALL'||state(p).text===f);});
- $('inventoryBody').innerHTML=list.length?list.map((p,i)=>{const st=state(p),std=standard(p);return `<tr><td>${i+1}</td><td>${esc(customer(p)||'-')}</td><td><span class="partno">${esc(partNo(p))}</span></td><td>${esc(code(p)||'-')}</td><td>${esc(partName(p)||'-')}</td><td>${std?esc(std):''}</td><td class="qty">${Number(p.in_qty||0).toLocaleString()}</td><td class="qty">${Number(p.out_qty||0).toLocaleString()}</td><td class="qty">${balance(p).toLocaleString()}</td><td class="qty">${minStock(p).toLocaleString()}</td><td><span class="badge ${st.cls}">${st.text}</span></td><td><div style="display:flex;gap:5px"><button class="btn soft mini" data-action="detail" data-part="${esc(partNo(p))}">ดู</button><button class="btn outline mini" data-action="qr" data-part="${esc(partNo(p))}">QR</button></div></td></tr>`;}).join(''):'<tr><td colspan="12" class="empty">ไม่พบข้อมูล PART</td></tr>';
- $('resultCount').textContent=`แสดง ${list.length.toLocaleString()} จาก ${parts.length.toLocaleString()} PART`;
+
+function getv(row,keys) {
+  for(const k of keys) {
+    if(row && row[k] !== undefined && row[k] !== null) {
+      return String(row[k]).trim();
+    }
+  }
+  return '';
 }
-function updateStats(){let low=0,out=0,total=0;parts.forEach(p=>{const b=balance(p);total+=b;if(b<=0)out++;else if(b<=minStock(p))low++;});$('statParts').textContent=parts.length.toLocaleString();$('statBalance').textContent=total.toLocaleString();$('statLow').textContent=low.toLocaleString();$('statOut').textContent=out.toLocaleString();}
-function populatePartSelect(){const s=$('movePartSelect');const old=s.value;s.innerHTML='<option value="">-- เลือก CODE / PART NO --</option>'+parts.map(p=>`<option value="${esc(partNo(p))}">${esc((code(p)?code(p)+' | ':'')+partNo(p)+(partName(p)?' | '+partName(p):''))}</option>`).join('');if(parts.some(p=>partNo(p)===old))s.value=old;updateSelectedPart();}
-function updateSelectedPart(){const p=parts.find(x=>partNo(x)===$('movePartSelect').value);$('movePartName').value=p?partName(p):'';$('moveStandard').value=p?standard(p):'';$('moveStandardWrap').classList.toggle('hidden',!p||!standard(p));}
-function openMovement(type='IN',p=currentPart){$('movePartSelect').value=p?partNo(p):'';$('moveType').value=type;$('moveQty').value='';$('moveDate').value=today();$('moveRemark').value='';$('movementTitle').textContent=type==='IN'?'บันทึกรับเข้า (IN)':'บันทึกเบิกออก (OUT)';updateSelectedPart();openModal('movementModal');}
-async function saveMovement(){
- const no=$('movePartSelect').value,type=$('moveType').value,qty=Number($('moveQty').value),date=$('moveDate').value,remark=$('moveRemark').value.trim();
- const p=parts.find(x=>partNo(x)===no);if(!p){showStatus('กรุณาเลือก PART ที่ต้องการบันทึก','error');return;}if(!Number.isInteger(qty)||qty<1){showStatus('กรุณาระบุจำนวนเป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป','error');return;}if(!date){showStatus('กรุณาระบุวันที่','error');return;}if(type==='OUT'&&qty>balance(p)){showStatus(`จำนวนเบิก (${qty}) มากกว่ายอดคงเหลือ (${balance(p)})`,'error');return;}
- const btn=$('saveMoveBtn');btn.disabled=true;btn.textContent='กำลังบันทึก...';
- try{const {error}=await db.from(MOVEMENT_TABLE).insert({part_no:no,movement_type:type,quantity:qty,movement_date:date,remark:remark||null});if(error)throw error;closeModal('movementModal');showStatus(type==='IN'?'บันทึกรับเข้าเรียบร้อยแล้ว':'บันทึกเบิกออกเรียบร้อยแล้ว','success');await loadInventory();if(currentPart&&partNo(currentPart)===no)await openPartByNo(no);}
- catch(err){console.error(err);showStatus('บันทึกไม่สำเร็จ: '+(err.message||err),'error');}finally{btn.disabled=false;btn.textContent='บันทึกข้อมูล';}
+
+function partNo(p) {
+  return getv(p,ALIASES.partNo);
 }
-async function fetchMovements(part=null){let query=db.from(MOVEMENT_TABLE).select('*').order('movement_date',{ascending:false}).order('created_at',{ascending:false}).limit(2000);if(part)query=query.eq('part_no',part);const {data,error}=await query;if(error)throw error;return data||[];}
-function renderPartHistory(rows){$('partHistoryBody').innerHTML=rows.length?rows.map(m=>`<tr><td>${fmtDate(m.movement_date)}</td><td><span class="badge ${m.movement_type==='IN'?'normal':'low'}">${esc(m.movement_type)}</span></td><td class="qty">${Number(m.quantity).toLocaleString()}</td><td>${esc(m.remark||'-')}</td><td>${m.created_at?new Date(m.created_at).toLocaleString('th-TH'):'-'}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">ยังไม่มีประวัติของ PART นี้</td></tr>';}
-async function openPartByNo(no){const p=parts.find(x=>partNo(x).toLowerCase()===String(no).toLowerCase());if(!p){showStatus('ไม่พบ PART NO '+no+' ในฐานข้อมูล','error');showView('inventoryView');return;}currentPart=p;const fields=[['Customer',customer(p)],['Part No',partNo(p)],['CODE',code(p)],['Part Name',partName(p)],['Standard',standard(p)],['Min',minStock(p)],['In',Number(p.in_qty||0)],['Out',Number(p.out_qty||0)],['Balance',balance(p)],['Status',state(p).text]];$('partDetails').innerHTML=fields.filter(([k,v])=>k!=='Standard'||String(v??'').trim()!=='').map(([k,v])=>`<div class="detail"><small>${esc(k)}</small><b>${esc(v??'-')}</b></div>`).join('');showView('partView');try{const rows=await fetchMovements(partNo(p));renderPartHistory(rows);}catch(err){$('partHistoryBody').innerHTML=`<tr><td colspan="5" class="empty">โหลดประวัติไม่สำเร็จ: ${esc(err.message)}</td></tr>`;}}
-async function openAllHistory(){hideStatus();showView('historyView');$('allHistoryBody').innerHTML='<tr><td colspan="8" class="empty">กำลังโหลดประวัติ...</td></tr>';try{movements=await fetchMovements();renderAllHistory();}catch(err){showStatus('โหลดประวัติไม่สำเร็จ: '+err.message,'error');}}
-function renderAllHistory(){const q=$('historySearch').value.trim().toLowerCase(),type=$('historyType').value;const list=movements.filter(m=>{const p=parts.find(x=>partNo(x)===m.part_no);return(type==='ALL'||m.movement_type===type)&&[m.part_no,m.remark,code(p||{}),partName(p||{})].join(' ').toLowerCase().includes(q);});$('allHistoryBody').innerHTML=list.length?list.map(m=>{const p=parts.find(x=>partNo(x)===m.part_no)||{};return `<tr><td>${fmtDate(m.movement_date)}</td><td class="partno">${esc(m.part_no)}</td><td>${esc(code(p)||'-')}</td><td>${esc(partName(p)||'-')}</td><td><span class="badge ${m.movement_type==='IN'?'normal':'low'}">${esc(m.movement_type)}</span></td><td class="qty">${Number(m.quantity).toLocaleString()}</td><td>${esc(m.remark||'-')}</td><td>${m.created_at?new Date(m.created_at).toLocaleString('th-TH'):'-'}</td></tr>`;}).join(''):'<tr><td colspan="8" class="empty">ไม่พบประวัติ</td></tr>';$('historyCount').textContent=`แสดง ${list.length.toLocaleString()} รายการ (โหลดล่าสุดไม่เกิน 2,000 รายการ)`;}
-function showQR(no){const p=parts.find(x=>partNo(x)===no);if(!p)return;const u=new URL(location.pathname,location.origin);u.searchParams.set('p',no);currentQRUrl=u.href;$('qrCanvas').innerHTML='';new QRCode($('qrCanvas'),{text:currentQRUrl,width:190,height:190,correctLevel:QRCode.CorrectLevel.M});$('qrPartLabel').textContent=no;$('qrUrlLabel').textContent=currentQRUrl;openModal('qrModal');}
-function printQR(){window.print();}
-function exportInventory(){if(!window.XLSX){showStatus('ไม่สามารถโหลดระบบ Excel ได้','error');return;}const rows=parts.map(p=>({'No':partNo(p),'Customer':customer(p),'Part No':partNo(p),'CODE':code(p),'Part Name':partName(p),'Standard':standard(p),'In':Number(p.in_qty||0),'Out':Number(p.out_qty||0),'Balance':balance(p),'Min':minStock(p),'Status':state(p).text}));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Inventory');XLSX.writeFile(wb,`TNC_Spare_Parts_${today()}.xlsx`);}
-async function exportHistory(){if(!window.XLSX){showStatus('ไม่สามารถโหลดระบบ Excel ได้','error');return;}try{if(!movements.length)movements=await fetchMovements();const rows=movements.map(m=>{const p=parts.find(x=>partNo(x)===m.part_no)||{};return {'Date':m.movement_date,'Part No':m.part_no,'CODE':code(p),'Part Name':partName(p),'Type':m.movement_type,'Quantity':Number(m.quantity),'Remark':m.remark||'','Created At':m.created_at||''};});const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'History');XLSX.writeFile(wb,`TNC_Spare_Parts_History_${today()}.xlsx`);}catch(e){showStatus('ส่งออกประวัติไม่สำเร็จ: '+e.message,'error');}}
-function downloadTemplate(){if(!window.XLSX)return;const rows=[{'Part No':'606402600C','Type':'IN','Quantity':10,'Date':today(),'Remark':'รับเข้า'},{'Part No':'606402600C','Type':'OUT','Quantity':2,'Date':today(),'Remark':'เบิกใช้งาน'}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Movements');XLSX.writeFile(wb,'TNC_Spare_Parts_Import_Template.xlsx');}
-function normKey(k){return String(k||'').trim().toLowerCase().replace(/[ _-]/g,'');}
-async function importExcel(file){if(!window.XLSX){showStatus('ไม่สามารถโหลดระบบ Excel ได้','error');return;}const btn=$('importBtn');btn.disabled=true;try{const data=await file.arrayBuffer();const wb=XLSX.read(data,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:''});if(!rows.length)throw new Error('ไม่พบข้อมูลในไฟล์');let ok=0,errors=[];for(let i=0;i<rows.length;i++){const raw=rows[i],r={};Object.keys(raw).forEach(k=>r[normKey(k)]=raw[k]);const no=String(r.partno||r.partnumber||'').trim(),type=String(r.type||r.movementtype||'').trim().toUpperCase(),qty=Number(r.quantity||r.qty),dateVal=r.date||r.movementdate||today(),remark=String(r.remark||r.note||'').trim();const p=parts.find(x=>partNo(x).toLowerCase()===no.toLowerCase());if(!p){errors.push(`แถว ${i+2}: ไม่พบ Part No ${no||'(ว่าง)'}`);continue;}if(!['IN','OUT'].includes(type)){errors.push(`แถว ${i+2}: Type ต้องเป็น IN หรือ OUT`);continue;}if(!Number.isInteger(qty)||qty<1){errors.push(`แถว ${i+2}: Quantity ต้องเป็นจำนวนเต็มตั้งแต่ 1`);continue;}let date=today();if(dateVal instanceof Date)date=dateVal.toISOString().slice(0,10);else if(typeof dateVal==='number'){const dc=XLSX.SSF.parse_date_code(dateVal);date=`${dc.y}-${String(dc.m).padStart(2,'0')}-${String(dc.d).padStart(2,'0')}`;}else if(String(dateVal).trim()){const s=String(dateVal).trim();date=/^\d{4}-\d{2}-\d{2}$/.test(s)?s:(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)?(()=>{const[a,b,c]=s.split('/');return `${c}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`;})():null);}if(!date){errors.push(`แถว ${i+2}: รูปแบบวันที่ไม่ถูกต้อง`);continue;}if(type==='OUT'&&qty>balance(p)){errors.push(`แถว ${i+2}: เบิก ${qty} มากกว่ายอดคงเหลือ ${balance(p)}`);continue;}const {error}=await db.from(MOVEMENT_TABLE).insert({part_no:partNo(p),movement_type:type,quantity:qty,movement_date:date,remark:remark||null});if(error){errors.push(`แถว ${i+2}: ${error.message}`);continue;}ok++;p[type==='IN'?'in_qty':'out_qty']=Number(p[type==='IN'?'in_qty':'out_qty']||0)+qty;p.balance=balance(p)+(type==='IN'?qty:-qty);}
- await loadInventory();if(errors.length)showStatus(`นำเข้าสำเร็จ ${ok} รายการ / พบข้อผิดพลาด ${errors.length} รายการ: ${errors.slice(0,8).join(' | ')}`,'info');else showStatus(`นำเข้าสำเร็จ ${ok} รายการ`,'success');closeModal('importModal');}catch(e){showStatus('นำเข้าไม่สำเร็จ: '+e.message,'error');}finally{btn.disabled=false;$('importFile').value='';}}
-// UI events
-document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b)closeModal(b.dataset.close);const a=e.target.closest('[data-action]');if(a){const no=a.dataset.part;if(a.dataset.action==='detail')openPartByNo(no);if(a.dataset.action==='qr')showQR(no);}});
-$('searchInput').addEventListener('input',renderInventory);$('statusFilter').addEventListener('change',renderInventory);$('refreshBtn').addEventListener('click',loadInventory);$('movementBtn').addEventListener('click',()=>openMovement('IN',null));$('historyBtn').addEventListener('click',openAllHistory);$('movePartSelect').addEventListener('change',updateSelectedPart);$('saveMoveBtn').addEventListener('click',saveMovement);$('backInventoryBtn').addEventListener('click',()=>{history.replaceState({},'',location.pathname);currentPart=null;showView('inventoryView');});$('backFromHistoryBtn').addEventListener('click',()=>showView('inventoryView'));$('detailInBtn').addEventListener('click',()=>openMovement('IN',currentPart));$('detailOutBtn').addEventListener('click',()=>openMovement('OUT',currentPart));$('detailQrBtn').addEventListener('click',()=>currentPart&&showQR(partNo(currentPart)));$('printQrBtn').addEventListener('click',printQR);$('exportBtn').addEventListener('click',exportInventory);$('exportHistoryBtn').addEventListener('click',exportHistory);$('historySearch').addEventListener('input',renderAllHistory);$('historyType').addEventListener('change',renderAllHistory);$('importBtn').addEventListener('click',()=>openModal('importModal'));$('chooseImportBtn').addEventListener('click',()=>$('importFile').click());$('downloadTemplateBtn').addEventListener('click',downloadTemplate);$('importFile').addEventListener('change',e=>{if(e.target.files[0])importExcel(e.target.files[0]);});
-async function init(){if(!window.supabase){showStatus('โหลด Supabase SDK ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต','error');return;}if(!window.QRCode)console.warn('QRCode library unavailable');if(!window.XLSX)console.warn('XLSX library unavailable');$('moveDate').value=today();await loadInventory();}
+
+function customer(p) {
+  return getv(p,ALIASES.customer);
+}
+
+function code(p) {
+  return getv(p,ALIASES.code);
+}
+
+function partName(p) {
+  return getv(p,ALIASES.name);
+}
+
+function standard(p) {
+  return getv(p,ALIASES.standard);
+}
+
+function standardMin(p) {
+  return getv(p,ALIASES.min);
+}
+
+function minStock(p) {
+  const n = Number(
+    p?.min_stock ??
+    p?.min ??
+    p?.minimum_stock ??
+    0
+  );
+
+  return Number.isFinite(n) ? n : 0;
+}
+
+function balance(p) {
+  return Number(
+    p?.balance ??
+    (Number(p?.in_qty || 0) - Number(p?.out_qty || 0))
+  );
+}
+
+function state(p) {
+  const b = balance(p);
+
+  if(b <= 0) {
+    return {text:'OUT OF STOCK',cls:'out'};
+  }
+
+  if(b <= minStock(p)) {
+    return {text:'LOW STOCK',cls:'low'};
+  }
+
+  return {text:'NORMAL',cls:'normal'};
+}
+
+function today() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+
+function fmtDate(v) {
+  if(!v) return '-';
+
+  const s = String(v).slice(0,10);
+  const a = s.split('-');
+
+  return a.length === 3
+    ? `${a[2]}/${a[1]}/${a[0]}`
+    : s;
+}
+
+function showStatus(msg,type='success') {
+  const e = $('status');
+  e.className = 'status show ' + type;
+  e.textContent = msg;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function hideStatus() {
+  $('status').className = 'status';
+  $('status').textContent = '';
+}
+
+function showView(name) {
+  ['inventoryView','partView','historyView'].forEach(id=>{
+    $(id).classList.toggle('active',id===name);
+  });
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function openModal(id) {
+  $(id).classList.add('show');
+}
+
+function closeModal(id) {
+  $(id).classList.remove('show');
+}
+
+function setConnection(ok,msg) {
+  $('connectionLabel').textContent = msg;
+  $('connectionLabel').style.background =
+    ok ? '#16865b55' : '#c83e4355';
+}
+
+function sortParts(a,b) {
+  return partNo(a).localeCompare(
+    partNo(b),
+    undefined,
+    {numeric:true}
+  );
+}
+
+
+// ==========================================
+// LOAD DATABASE
+// ==========================================
+
+async function loadInventory() {
+
+  hideStatus();
+
+  $('loadLabel').textContent = 'กำลังโหลดข้อมูล...';
+  setConnection(false,'กำลังเชื่อมต่อ...');
+
+  try {
+
+    const [inventoryResult,masterResult] = await Promise.all([
+
+      db.from(INVENTORY_VIEW)
+        .select('*')
+        .order('part_no',{ascending:true}),
+
+      db.from(MASTER_TABLE)
+        .select('*')
+
+    ]);
+
+    if(inventoryResult.error) {
+      throw inventoryResult.error;
+    }
+
+    if(masterResult.error) {
+      throw masterResult.error;
+    }
+
+    // Inventory สำหรับยอด IN / OUT / Balance
+    parts = (inventoryResult.data || [])
+      .filter(p=>partNo(p))
+      .sort(sortParts);
+
+    // Master สำหรับข้อมูล CODE แต่ละรายการ
+    masterParts = (masterResult.data || [])
+      .filter(p=>partNo(p));
+
+    renderInventory();
+    updateStats();
+    populatePartSelect();
+
+    $('loadLabel').textContent =
+      `โหลดแล้ว ${parts.length.toLocaleString()} PART`;
+
+    setConnection(true,'เชื่อมต่อฐานข้อมูลแล้ว');
+
+    const qr = new URLSearchParams(location.search).get('p');
+
+    if(qr) {
+      await openPartByNo(qr);
+    }
+
+  } catch(err) {
+
+    console.error(err);
+
+    $('loadLabel').textContent = 'โหลดข้อมูลไม่สำเร็จ';
+
+    setConnection(false,'เชื่อมต่อไม่สำเร็จ');
+
+    showStatus(
+      'โหลดข้อมูลไม่สำเร็จ: ' +
+      (err.message || err) +
+      ' | ตรวจสอบตาราง part_database และ spare_parts_inventory',
+      'error'
+    );
+  }
+}
+
+
+// ==========================================
+// INVENTORY TABLE
+// ==========================================
+
+function renderInventory() {
+
+  const q = $('searchInput').value.trim().toLowerCase();
+  const f = $('statusFilter').value;
+
+  const list = parts.filter(p=>{
+
+    const hay = [
+      partNo(p),
+      customer(p),
+      code(p),
+      partName(p),
+      standard(p)
+    ].join(' ').toLowerCase();
+
+    return hay.includes(q) &&
+      (f === 'ALL' || state(p).text === f);
+
+  });
+
+  $('inventoryBody').innerHTML = list.length
+    ? list.map((p,i)=>{
+
+        const st = state(p);
+        const std = standard(p);
+
+        return `
+          <tr>
+            <td>${i+1}</td>
+            <td>${esc(customer(p)||'-')}</td>
+            <td>
+              <span class="partno">${esc(partNo(p))}</span>
+            </td>
+            <td>${esc(code(p)||'-')}</td>
+            <td>${esc(partName(p)||'-')}</td>
+            <td>${std ? esc(std) : ''}</td>
+            <td class="qty">${Number(p.in_qty||0).toLocaleString()}</td>
+            <td class="qty">${Number(p.out_qty||0).toLocaleString()}</td>
+            <td class="qty">${balance(p).toLocaleString()}</td>
+            <td class="qty">${minStock(p).toLocaleString()}</td>
+            <td>
+              <span class="badge ${st.cls}">${st.text}</span>
+            </td>
+            <td>
+              <div style="display:flex;gap:5px">
+                <button
+                  class="btn soft mini"
+                  data-action="detail"
+                  data-part="${esc(partNo(p))}">
+                  ดู
+                </button>
+
+                <button
+                  class="btn outline mini"
+                  data-action="qr"
+                  data-part="${esc(partNo(p))}">
+                  QR
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+
+      }).join('')
+
+    : '<tr><td colspan="12" class="empty">ไม่พบข้อมูล PART</td></tr>';
+
+  $('resultCount').textContent =
+    `แสดง ${list.length.toLocaleString()} จาก ${parts.length.toLocaleString()} PART`;
+}
+
+
+function updateStats() {
+
+  let low = 0;
+  let out = 0;
+  let total = 0;
+
+  parts.forEach(p=>{
+
+    const b = balance(p);
+
+    total += b;
+
+    if(b <= 0) {
+      out++;
+    } else if(b <= minStock(p)) {
+      low++;
+    }
+
+  });
+
+  $('statParts').textContent = parts.length.toLocaleString();
+  $('statBalance').textContent = total.toLocaleString();
+  $('statLow').textContent = low.toLocaleString();
+  $('statOut').textContent = out.toLocaleString();
+}
+
+
+// ==========================================
+// PART CODE DROPDOWN
+// ==========================================
+
+function getCodeRows(no) {
+
+  return masterParts
+    .filter(x=>
+      partNo(x).toLowerCase() === String(no).toLowerCase()
+    )
+    .sort((a,b)=>
+      code(a).localeCompare(
+        code(b),
+        undefined,
+        {numeric:true}
+      )
+    );
+}
+
+
+async function openPartByNo(no) {
+
+  const p = parts.find(x=>
+    partNo(x).toLowerCase() === String(no).toLowerCase()
+  );
+
+  if(!p) {
+
+    showStatus('ไม่พบ PART NO ' + no + ' ในฐานข้อมูล','error');
+
+    showView('inventoryView');
+
+    return;
+  }
+
+  currentPart = p;
+
+  // โหลด CODE ทั้งหมดของ PART NO นี้
+  currentCodeRows = getCodeRows(partNo(p));
+
+  const select = $('detailCodeSelect');
+
+  if(currentCodeRows.length) {
+
+    select.innerHTML =
+      '<option value="">-- เลือก CODE --</option>' +
+
+      currentCodeRows.map((x,i)=>`
+        <option value="${i}">
+          ${esc(code(x) || 'ไม่มี CODE')}
+        </option>
+      `).join('');
+
+    // เลือก CODE แรกเป็นค่าเริ่มต้น
+    select.value = '0';
+
+    selectedCodePart = currentCodeRows[0];
+
+  } else {
+
+    select.innerHTML =
+      '<option value="">ไม่พบ CODE ในฐานข้อมูล</option>';
+
+    selectedCodePart = null;
+  }
+
+  renderSelectedCode();
+
+  showView('partView');
+
+  try {
+
+    const rows = await fetchMovements(partNo(p));
+
+    renderPartHistory(rows);
+
+  } catch(err) {
+
+    $('partHistoryBody').innerHTML = `
+      <tr>
+        <td colspan="5" class="empty">
+          โหลดประวัติไม่สำเร็จ: ${esc(err.message)}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+
+function renderSelectedCode() {
+
+  const p = currentPart;
+
+  if(!p) return;
+
+  const index = $('detailCodeSelect').value;
+
+  selectedCodePart =
+    index !== '' && currentCodeRows[Number(index)]
+      ? currentCodeRows[Number(index)]
+      : null;
+
+  const selected = selectedCodePart;
+
+  // ข้อมูลที่เปลี่ยนตาม CODE
+  const selectedName = selected
+    ? partName(selected)
+    : partName(p);
+
+  const selectedStandard = selected
+    ? standard(selected)
+    : standard(p);
+
+  const selectedMin = selected
+    ? standardMin(selected)
+    : '';
+
+  const fields = [
+
+    ['Customer',customer(p)],
+
+    ['Part No',partNo(p)],
+
+    ['CODE',selected ? code(selected) : code(p)],
+
+    ['Part Name',selectedName],
+
+    ['Standard',selectedStandard],
+
+    ['Standard Min',selectedMin],
+
+    // ข้อมูลสต็อกยังคงอิง PART NO
+    ['In',Number(p.in_qty||0)],
+
+    ['Out',Number(p.out_qty||0)],
+
+    ['Balance',balance(p)],
+
+    ['Min',minStock(p)],
+
+    ['Status',state(p).text]
+
+  ];
+
+  $('partDetails').innerHTML = fields
+
+    .filter(([key,value])=>{
+
+      // ซ่อน Standard หากไม่มีข้อมูล
+      if(key === 'Standard') {
+        return String(value ?? '').trim() !== '';
+      }
+
+      // ซ่อน Standard Min หากไม่มีข้อมูล
+      if(key === 'Standard Min') {
+        return String(value ?? '').trim() !== '';
+      }
+
+      return true;
+
+    })
+
+    .map(([key,value])=>`
+
+      <div class="detail">
+        <small>${esc(key)}</small>
+        <b>${esc(value ?? '-')}</b>
+      </div>
+
+    `).join('');
+}
+
+
+// ==========================================
+// MOVEMENT DROPDOWN
+// ==========================================
+
+function populatePartSelect() {
+
+  const s = $('movePartSelect');
+  const old = s.value;
+
+  s.innerHTML =
+    '<option value="">-- เลือก CODE / PART NO --</option>' +
+
+    parts.map(p=>`
+
+      <option value="${esc(partNo(p))}">
+        ${esc(
+          (code(p) ? code(p)+' | ' : '') +
+          partNo(p) +
+          (partName(p) ? ' | '+partName(p) : '')
+        )}
+      </option>
+
+    `).join('');
+
+  if(parts.some(p=>partNo(p)===old)) {
+    s.value = old;
+  }
+
+  updateSelectedPart();
+}
+
+
+function updateSelectedPart() {
+
+  const p = parts.find(
+    x=>partNo(x)===$('movePartSelect').value
+  );
+
+  $('movePartName').value = p ? partName(p) : '';
+
+  $('moveStandard').value = p ? standard(p) : '';
+
+  $('moveStandardWrap').classList.toggle(
+    'hidden',
+    !p || !standard(p)
+  );
+}
+
+
+function openMovement(type='IN',p=currentPart) {
+
+  $('movePartSelect').value = p ? partNo(p) : '';
+
+  $('moveType').value = type;
+
+  $('moveQty').value = '';
+
+  $('moveDate').value = today();
+
+  $('moveRemark').value = '';
+
+  $('movementTitle').textContent =
+    type === 'IN'
+      ? 'บันทึกรับเข้า (IN)'
+      : 'บันทึกเบิกออก (OUT)';
+
+  updateSelectedPart();
+
+  openModal('movementModal');
+}
+
+
+// ==========================================
+// SAVE IN / OUT
+// ==========================================
+
+async function saveMovement() {
+
+  const no = $('movePartSelect').value;
+  const type = $('moveType').value;
+  const qty = Number($('moveQty').value);
+  const date = $('moveDate').value;
+  const remark = $('moveRemark').value.trim();
+
+  const p = parts.find(x=>partNo(x)===no);
+
+  if(!p) {
+    showStatus('กรุณาเลือก PART ที่ต้องการบันทึก','error');
+    return;
+  }
+
+  if(!Number.isInteger(qty) || qty < 1) {
+    showStatus('กรุณาระบุจำนวนเป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป','error');
+    return;
+  }
+
+  if(!date) {
+    showStatus('กรุณาระบุวันที่','error');
+    return;
+  }
+
+  if(type === 'OUT' && qty > balance(p)) {
+    showStatus(
+      `จำนวนเบิก (${qty}) มากกว่ายอดคงเหลือ (${balance(p)})`,
+      'error'
+    );
+    return;
+  }
+
+  const btn = $('saveMoveBtn');
+
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+
+  try {
+
+    const {error} = await db
+      .from(MOVEMENT_TABLE)
+      .insert({
+        part_no:no,
+        movement_type:type,
+        quantity:qty,
+        movement_date:date,
+        remark:remark || null
+      });
+
+    if(error) throw error;
+
+    closeModal('movementModal');
+
+    showStatus(
+      type === 'IN'
+        ? 'บันทึกรับเข้าเรียบร้อยแล้ว'
+        : 'บันทึกเบิกออกเรียบร้อยแล้ว',
+      'success'
+    );
+
+    await loadInventory();
+
+    if(currentPart && partNo(currentPart) === no) {
+      await openPartByNo(no);
+    }
+
+  } catch(err) {
+
+    console.error(err);
+
+    showStatus('บันทึกไม่สำเร็จ: '+(err.message||err),'error');
+
+  } finally {
+
+    btn.disabled = false;
+    btn.textContent = 'บันทึกข้อมูล';
+  }
+}
+
+
+// ==========================================
+// MOVEMENT HISTORY
+// ==========================================
+
+async function fetchMovements(part=null) {
+
+  let query = db
+    .from(MOVEMENT_TABLE)
+    .select('*')
+    .order('movement_date',{ascending:false})
+    .order('created_at',{ascending:false})
+    .limit(2000);
+
+  if(part) {
+    query = query.eq('part_no',part);
+  }
+
+  const {data,error} = await query;
+
+  if(error) throw error;
+
+  return data || [];
+}
+
+
+function renderPartHistory(rows) {
+
+  $('partHistoryBody').innerHTML = rows.length
+
+    ? rows.map(m=>`
+
+      <tr>
+        <td>${fmtDate(m.movement_date)}</td>
+
+        <td>
+          <span class="badge ${m.movement_type==='IN'?'normal':'low'}">
+            ${esc(m.movement_type)}
+          </span>
+        </td>
+
+        <td class="qty">
+          ${Number(m.quantity).toLocaleString()}
+        </td>
+
+        <td>${esc(m.remark||'-')}</td>
+
+        <td>
+          ${m.created_at
+            ? new Date(m.created_at).toLocaleString('th-TH')
+            : '-'}
+        </td>
+      </tr>
+
+    `).join('')
+
+    : '<tr><td colspan="5" class="empty">ยังไม่มีประวัติของ PART นี้</td></tr>';
+}
+
+
+// ==========================================
+// ALL HISTORY
+// ==========================================
+
+async function openAllHistory() {
+
+  hideStatus();
+
+  showView('historyView');
+
+  $('allHistoryBody').innerHTML =
+    '<tr><td colspan="8" class="empty">กำลังโหลดประวัติ...</td></tr>';
+
+  try {
+
+    movements = await fetchMovements();
+
+    renderAllHistory();
+
+  } catch(err) {
+
+    showStatus('โหลดประวัติไม่สำเร็จ: '+err.message,'error');
+  }
+}
+
+
+function renderAllHistory() {
+
+  const q = $('historySearch').value.trim().toLowerCase();
+  const type = $('historyType').value;
+
+  const list = movements.filter(m=>{
+
+    const p = parts.find(x=>partNo(x)===m.part_no);
+
+    return (
+      (type === 'ALL' || m.movement_type === type) &&
+      [
+        m.part_no,
+        m.remark,
+        code(p||{}),
+        partName(p||{})
+      ].join(' ').toLowerCase().includes(q)
+    );
+  });
+
+  $('allHistoryBody').innerHTML = list.length
+
+    ? list.map(m=>{
+
+        const p = parts.find(x=>partNo(x)===m.part_no)||{};
+
+        return `
+
+          <tr>
+            <td>${fmtDate(m.movement_date)}</td>
+
+            <td class="partno">${esc(m.part_no)}</td>
+
+            <td>${esc(code(p)||'-')}</td>
+
+            <td>${esc(partName(p)||'-')}</td>
+
+            <td>
+              <span class="badge ${m.movement_type==='IN'?'normal':'low'}">
+                ${esc(m.movement_type)}
+              </span>
+            </td>
+
+            <td class="qty">
+              ${Number(m.quantity).toLocaleString()}
+            </td>
+
+            <td>${esc(m.remark||'-')}</td>
+
+            <td>
+              ${m.created_at
+                ? new Date(m.created_at).toLocaleString('th-TH')
+                : '-'}
+            </td>
+          </tr>
+
+        `;
+
+      }).join('')
+
+    : '<tr><td colspan="8" class="empty">ไม่พบประวัติ</td></tr>';
+
+  $('historyCount').textContent =
+    `แสดง ${list.length.toLocaleString()} รายการ (โหลดล่าสุดไม่เกิน 2,000 รายการ)`;
+}
+
+
+// ==========================================
+// QR CODE
+// ==========================================
+
+function showQR(no) {
+
+  const p = parts.find(x=>partNo(x)===no);
+
+  if(!p) return;
+
+  const u = new URL(location.pathname,location.origin);
+
+  // QR 1 อัน ต่อ 1 PART NO
+  u.searchParams.set('p',no);
+
+  currentQRUrl = u.href;
+
+  $('qrCanvas').innerHTML = '';
+
+  new QRCode($('qrCanvas'),{
+    text:currentQRUrl,
+    width:190,
+    height:190,
+    correctLevel:QRCode.CorrectLevel.M
+  });
+
+  $('qrPartLabel').textContent = no;
+
+  $('qrUrlLabel').textContent = currentQRUrl;
+
+  openModal('qrModal');
+}
+
+
+function printQR() {
+  window.print();
+}
+
+
+// ==========================================
+// EXCEL EXPORT
+// ==========================================
+
+function exportInventory() {
+
+  if(!window.XLSX) {
+    showStatus('ไม่สามารถโหลดระบบ Excel ได้','error');
+    return;
+  }
+
+  const rows = parts.map(p=>({
+
+    'No':partNo(p),
+    'Customer':customer(p),
+    'Part No':partNo(p),
+    'CODE':code(p),
+    'Part Name':partName(p),
+    'Standard':standard(p),
+    'In':Number(p.in_qty||0),
+    'Out':Number(p.out_qty||0),
+    'Balance':balance(p),
+    'Min':minStock(p),
+    'Status':state(p).text
+
+  }));
+
+  const wb = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet(rows),
+    'Inventory'
+  );
+
+  XLSX.writeFile(
+    wb,
+    `TNC_Spare_Parts_${today()}.xlsx`
+  );
+}
+
+
+async function exportHistory() {
+
+  if(!window.XLSX) {
+    showStatus('ไม่สามารถโหลดระบบ Excel ได้','error');
+    return;
+  }
+
+  try {
+
+    if(!movements.length) {
+      movements = await fetchMovements();
+    }
+
+    const rows = movements.map(m=>{
+
+      const p = parts.find(x=>partNo(x)===m.part_no)||{};
+
+      return {
+
+        'Date':m.movement_date,
+        'Part No':m.part_no,
+        'CODE':code(p),
+        'Part Name':partName(p),
+        'Type':m.movement_type,
+        'Quantity':Number(m.quantity),
+        'Remark':m.remark||'',
+        'Created At':m.created_at||''
+
+      };
+    });
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(rows),
+      'History'
+    );
+
+    XLSX.writeFile(
+      wb,
+      `TNC_Spare_Parts_History_${today()}.xlsx`
+    );
+
+  } catch(e) {
+
+    showStatus('ส่งออกประวัติไม่สำเร็จ: '+e.message,'error');
+  }
+}
+
+
+// ==========================================
+// EXCEL IMPORT
+// ==========================================
+
+function downloadTemplate() {
+
+  if(!window.XLSX) return;
+
+  const rows = [
+
+    {
+      'Part No':'606402600C',
+      'Type':'IN',
+      'Quantity':10,
+      'Date':today(),
+      'Remark':'รับเข้า'
+    },
+
+    {
+      'Part No':'606402600C',
+      'Type':'OUT',
+      'Quantity':2,
+      'Date':today(),
+      'Remark':'เบิกใช้งาน'
+    }
+
+  ];
+
+  const wb = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet(rows),
+    'Movements'
+  );
+
+  XLSX.writeFile(
+    wb,
+    'TNC_Spare_Parts_Import_Template.xlsx'
+  );
+}
+
+
+function normKey(k) {
+
+  return String(k||'')
+    .trim()
+    .toLowerCase()
+    .replace(/[ _-]/g,'');
+}
+
+
+async function importExcel(file) {
+
+  if(!window.XLSX) {
+    showStatus('ไม่สามารถโหลดระบบ Excel ได้','error');
+    return;
+  }
+
+  const btn = $('importBtn');
+
+  btn.disabled = true;
+
+  try {
+
+    const data = await file.arrayBuffer();
+
+    const wb = XLSX.read(data,{
+      type:'array',
+      cellDates:true
+    });
+
+    const ws = wb.Sheets[wb.SheetNames[0]];
+
+    const rows = XLSX.utils.sheet_to_json(ws,{
+      defval:''
+    });
+
+    if(!rows.length) {
+      throw new Error('ไม่พบข้อมูลในไฟล์');
+    }
+
+    let ok = 0;
+    let errors = [];
+
+    for(let i=0;i<rows.length;i++) {
+
+      const raw = rows[i];
+      const r = {};
+
+      Object.keys(raw).forEach(k=>{
+        r[normKey(k)] = raw[k];
+      });
+
+      const no = String(
+        r.partno || r.partnumber || ''
+      ).trim();
+
+      const type = String(
+        r.type || r.movementtype || ''
+      ).trim().toUpperCase();
+
+      const qty = Number(
+        r.quantity || r.qty
+      );
+
+      const dateVal =
+        r.date || r.movementdate || today();
+
+      const remark = String(
+        r.remark || r.note || ''
+      ).trim();
+
+      const p = parts.find(
+        x=>partNo(x).toLowerCase()===no.toLowerCase()
+      );
+
+      if(!p) {
+        errors.push(`แถว ${i+2}: ไม่พบ Part No ${no||'(ว่าง)'}`);
+        continue;
+      }
+
+      if(!['IN','OUT'].includes(type)) {
+        errors.push(`แถว ${i+2}: Type ต้องเป็น IN หรือ OUT`);
+        continue;
+      }
+
+      if(!Number.isInteger(qty)||qty<1) {
+        errors.push(`แถว ${i+2}: Quantity ต้องเป็นจำนวนเต็มตั้งแต่ 1`);
+        continue;
+      }
+
+      let date = today();
+
+      if(dateVal instanceof Date) {
+
+        date = dateVal.toISOString().slice(0,10);
+
+      } else if(typeof dateVal === 'number') {
+
+        const dc = XLSX.SSF.parse_date_code(dateVal);
+
+        date =
+          `${dc.y}-${String(dc.m).padStart(2,'0')}-${String(dc.d).padStart(2,'0')}`;
+
+      } else if(String(dateVal).trim()) {
+
+        const s = String(dateVal).trim();
+
+        date = /^\d{4}-\d{2}-\d{2}$/.test(s)
+          ? s
+          : (
+              /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)
+                ? (()=>{
+                    const [a,b,c] = s.split('/');
+                    return `${c}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`;
+                  })()
+                : null
+            );
+      }
+
+      if(!date) {
+        errors.push(`แถว ${i+2}: รูปแบบวันที่ไม่ถูกต้อง`);
+        continue;
+      }
+
+      if(type === 'OUT' && qty > balance(p)) {
+        errors.push(
+          `แถว ${i+2}: เบิก ${qty} มากกว่ายอดคงเหลือ ${balance(p)}`
+        );
+        continue;
+      }
+
+      const {error} = await db
+        .from(MOVEMENT_TABLE)
+        .insert({
+
+          part_no:partNo(p),
+          movement_type:type,
+          quantity:qty,
+          movement_date:date,
+          remark:remark||null
+
+        });
+
+      if(error) {
+
+        errors.push(`แถว ${i+2}: ${error.message}`);
+
+        continue;
+      }
+
+      ok++;
+
+      p[type==='IN'?'in_qty':'out_qty'] =
+        Number(p[type==='IN'?'in_qty':'out_qty']||0)+qty;
+
+      p.balance =
+        balance(p)+(type==='IN'?qty:-qty);
+    }
+
+    await loadInventory();
+
+    if(errors.length) {
+
+      showStatus(
+        `นำเข้าสำเร็จ ${ok} รายการ / พบข้อผิดพลาด ${errors.length} รายการ: ${errors.slice(0,8).join(' | ')}`,
+        'info'
+      );
+
+    } else {
+
+      showStatus(`นำเข้าสำเร็จ ${ok} รายการ`,'success');
+    }
+
+    closeModal('importModal');
+
+  } catch(e) {
+
+    showStatus('นำเข้าไม่สำเร็จ: '+e.message,'error');
+
+  } finally {
+
+    btn.disabled = false;
+
+    $('importFile').value = '';
+  }
+}
+
+
+// ==========================================
+// UI EVENTS
+// ==========================================
+
+document.addEventListener('click',e=>{
+
+  const b = e.target.closest('[data-close]');
+
+  if(b) {
+    closeModal(b.dataset.close);
+  }
+
+  const a = e.target.closest('[data-action]');
+
+  if(a) {
+
+    const no = a.dataset.part;
+
+    if(a.dataset.action === 'detail') {
+      openPartByNo(no);
+    }
+
+    if(a.dataset.action === 'qr') {
+      showQR(no);
+    }
+  }
+});
+
+
+$('searchInput').addEventListener(
+  'input',
+  renderInventory
+);
+
+$('statusFilter').addEventListener(
+  'change',
+  renderInventory
+);
+
+$('refreshBtn').addEventListener(
+  'click',
+  loadInventory
+);
+
+$('movementBtn').addEventListener(
+  'click',
+  ()=>openMovement('IN',null)
+);
+
+$('historyBtn').addEventListener(
+  'click',
+  openAllHistory
+);
+
+$('movePartSelect').addEventListener(
+  'change',
+  updateSelectedPart
+);
+
+$('saveMoveBtn').addEventListener(
+  'click',
+  saveMovement
+);
+
+// เปลี่ยน CODE ในหน้ารายละเอียด PART
+$('detailCodeSelect').addEventListener(
+  'change',
+  renderSelectedCode
+);
+
+// กลับหน้ารวมจากหน้าประวัติ
+$('backFromHistoryBtn').addEventListener(
+  'click',
+  ()=>{
+    history.replaceState({},'',location.pathname);
+    currentPart = null;
+    currentCodeRows = [];
+    selectedCodePart = null;
+    showView('inventoryView');
+  }
+);
+
+$('detailInBtn').addEventListener(
+  'click',
+  ()=>openMovement('IN',currentPart)
+);
+
+$('detailOutBtn').addEventListener(
+  'click',
+  ()=>openMovement('OUT',currentPart)
+);
+
+$('detailQrBtn').addEventListener(
+  'click',
+  ()=>currentPart&&showQR(partNo(currentPart))
+);
+
+$('printQrBtn').addEventListener(
+  'click',
+  printQR
+);
+
+$('exportBtn').addEventListener(
+  'click',
+  exportInventory
+);
+
+$('exportHistoryBtn').addEventListener(
+  'click',
+  exportHistory
+);
+
+$('historySearch').addEventListener(
+  'input',
+  renderAllHistory
+);
+
+$('historyType').addEventListener(
+  'change',
+  renderAllHistory
+);
+
+$('importBtn').addEventListener(
+  'click',
+  ()=>openModal('importModal')
+);
+
+$('chooseImportBtn').addEventListener(
+  'click',
+  ()=>$('importFile').click()
+);
+
+$('downloadTemplateBtn').addEventListener(
+  'click',
+  downloadTemplate
+);
+
+$('importFile').addEventListener(
+  'change',
+  e=>{
+    if(e.target.files[0]) {
+      importExcel(e.target.files[0]);
+    }
+  }
+);
+
+
+// ==========================================
+// INITIALIZE
+// ==========================================
+
+async function init() {
+
+  if(!window.supabase) {
+    showStatus(
+      'โหลด Supabase SDK ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต',
+      'error'
+    );
+    return;
+  }
+
+  if(!window.QRCode) {
+    console.warn('QRCode library unavailable');
+  }
+
+  if(!window.XLSX) {
+    console.warn('XLSX library unavailable');
+  }
+
+  $('moveDate').value = today();
+
+  await loadInventory();
+}
+
 init();
+
 </script>
 </body>
 </html>
