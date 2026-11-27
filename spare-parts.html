@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -30,7 +31,7 @@ button{cursor:pointer}
 .top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .top-pill{font-size:11px;border:1px solid #ffffff44;background:#ffffff12;padding:7px 10px;border-radius:20px;color:#e8f2fa}
 .container{padding:21px 16px 45px}
-.status{display:none;padding:12px 15px;border-radius:9px;margin-bottom:15px;font-size:13px;line-height:1.5}
+.status{display:none;padding:12px 15px;border-radius:9px;margin-bottom:15px;font-size:13px;line-height:1.5;white-space:pre-line}
 .status.show{display:block}
 .status.success{background:var(--greenbg);color:#147747}
 .status.error{background:var(--redbg);color:#b83232}
@@ -86,15 +87,8 @@ tbody tr:hover{background:#f8fbfe}
 .detail small{display:block;color:var(--muted);font-size:10px;margin-bottom:6px}
 .detail b{font-size:13px;color:var(--navy);word-break:break-word}
 .detail-code-select{
-width:100%;
-padding:7px 9px;
-border:1px solid #cdd8e2;
-border-radius:7px;
-background:#fff;
-color:#173653;
-font-weight:700;
-font-size:13px;
-outline:none;
+width:100%;padding:7px 9px;border:1px solid #cdd8e2;border-radius:7px;
+background:#fff;color:#173653;font-weight:700;font-size:13px;outline:none
 }
 .detail-code-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2878bd18}
 .detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
@@ -223,9 +217,24 @@ body *{visibility:hidden!important}
 
     <div class="detail-actions">
       <button class="btn outline" id="exportBtn">⇩ ส่งออก Excel</button>
+
+      <button class="btn success-btn" id="importMasterBtn">
+        ⇧ Import PART / CODE
+      </button>
+
+      <button class="btn outline" id="masterTemplateBtn">
+        ⇩ Template PART
+      </button>
+
+      <input id="importMasterFile" type="file" accept=".xlsx,.xls,.csv" hidden>
+
       <button class="btn outline" id="importBtn">⇧ นำเข้า Excel (IN/OUT)</button>
       <input id="importFile" type="file" accept=".xlsx,.xls,.csv" hidden>
-      <span class="hint">นำเข้า Excel สำหรับบันทึกรายการ IN/OUT โดยใช้คอลัมน์ Part No, Type, Quantity, Date, Remark</span>
+
+      <span class="hint">
+        Import PART/CODE เพื่อเพิ่มข้อมูลอะไหล่ในฐานข้อมูล |
+        Import IN/OUT เพื่อบันทึกประวัติสต็อก
+      </span>
     </div>
   </div>
 
@@ -270,8 +279,6 @@ body *{visibility:hidden!important}
   </div>
 
   <div class="panel-body">
-
-    <!-- Dropdown CODE จะอยู่ในช่อง CODE ภายใน partDetails -->
     <div id="partDetails" class="detail-grid"></div>
 
     <div class="detail-actions">
@@ -298,7 +305,6 @@ body *{visibility:hidden!important}
         </tbody>
       </table>
     </div>
-
   </div>
 </section>
 </section>
@@ -381,7 +387,7 @@ body *{visibility:hidden!important}
         <select id="movePartSelect">
           <option value="">กำลังโหลด PART...</option>
         </select>
-        <div class="hint">เลือก CODE แล้วระบบจะแสดง Part Name และ Standard ของ PART ที่ตรงกันโดยอัตโนมัติ</div>
+        <div class="hint">เลือก PART เพื่อบันทึกรายการ IN / OUT</div>
       </div>
 
       <div class="field">
@@ -439,7 +445,6 @@ body *{visibility:hidden!important}
 
   <div class="modal-body">
     <div class="qr-layout">
-
       <div class="qr-paper" id="qrPaper">
         <div id="qrCanvas"></div>
         <b id="qrPartLabel"></b>
@@ -453,19 +458,18 @@ body *{visibility:hidden!important}
         </p>
         <button class="btn primary" id="printQrBtn">พิมพ์ QR Code</button>
       </div>
-
     </div>
   </div>
 </div>
 </div>
 
 
-<!-- IMPORT MODAL -->
+<!-- IMPORT IN / OUT MODAL -->
 <div class="modal" id="importModal">
 <div class="modal-card">
 
   <div class="modal-head">
-    <strong>รูปแบบไฟล์นำเข้า Excel</strong>
+    <strong>รูปแบบไฟล์นำเข้า Excel IN / OUT</strong>
     <button class="btn soft mini" data-close="importModal">ปิด ✕</button>
   </div>
 
@@ -719,7 +723,6 @@ async function loadInventory(){
 
   try{
 
-    // โหลด Inventory และ Master แยกกัน
     const [inventoryResult,masterResult]=await Promise.all([
 
       db.from(INVENTORY_VIEW)
@@ -737,7 +740,6 @@ async function loadInventory(){
       .filter(p=>partNo(p))
       .sort(sortParts);
 
-    // Master ใช้สำหรับเลือก CODE ในหน้ารายละเอียด
     if(masterResult.error){
       console.error('Master data error:',masterResult.error);
       masterParts=[];
@@ -901,10 +903,8 @@ async function openPartByNo(no){
 
   currentPart=p;
 
-  // ดึง CODE ทุกตัวของ PART NO นี้
   currentCodeRows=getCodeRows(partNo(p));
 
-  // เริ่มต้นที่ CODE ตัวแรก
   selectedCodePart=currentCodeRows[0]||null;
 
   renderSelectedCode(0);
@@ -930,7 +930,6 @@ async function openPartByNo(no){
 }
 
 
-// แสดงข้อมูลทั้งหมด โดยฝัง Dropdown ไว้ในช่อง CODE
 function renderSelectedCode(index=0){
 
   const p=currentPart;
@@ -953,7 +952,6 @@ function renderSelectedCode(index=0){
     ? standardMin(selected)
     : '';
 
-  // สร้าง Dropdown ภายในช่อง CODE
   const codeDropdown=currentCodeRows.length
 
     ? `
@@ -1005,12 +1003,10 @@ function renderSelectedCode(index=0){
 
     .filter(([key,value])=>{
 
-      // ไม่มี Standard ให้ซ่อน
       if(key==='Standard'){
         return String(value??'').trim()!=='';
       }
 
-      // ไม่มี Standard Min ให้ซ่อน
       if(key==='Standard Min'){
         return String(value??'').trim()!=='';
       }
@@ -1341,7 +1337,6 @@ function showQR(no){
 
   const u=new URL(location.pathname,location.origin);
 
-  // 1 QR ต่อ 1 PART NO
   u.searchParams.set('p',no);
 
   currentQRUrl=u.href;
@@ -1459,7 +1454,7 @@ async function exportHistory(){
 
 
 // ==========================================
-// EXCEL IMPORT
+// EXCEL IMPORT IN / OUT - ORIGINAL SYSTEM
 // ==========================================
 
 function downloadTemplate(){
@@ -1679,6 +1674,504 @@ async function importExcel(file){
 
 
 // ==========================================
+// NEW: IMPORT MASTER PART / CODE FROM EXCEL
+// ==========================================
+
+// ปรับชื่อหัวตาราง Excel ให้เป็นรูปแบบเดียวกัน
+function masterExcelKey(value){
+
+  return String(value??'')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g,'');
+}
+
+
+// อ่านค่าจาก Excel โดยรองรับชื่อหัวคอลัมน์หลายรูปแบบ
+function masterExcelCell(row,names){
+
+  for(const name of names){
+
+    const key=masterExcelKey(name);
+
+    if(
+      row[key]!==undefined &&
+      row[key]!==null
+    ){
+
+      return String(row[key]).trim();
+    }
+  }
+
+  return '';
+}
+
+
+// ==========================================
+// DOWNLOAD MASTER PART TEMPLATE
+// ==========================================
+
+function downloadMasterTemplate(){
+
+  if(!window.XLSX){
+    showStatus('ไม่สามารถโหลดระบบ Excel ได้','error');
+    return;
+  }
+
+  const rows=[
+
+    {
+      'Customer':'ATH',
+      'Part No':'606402600C',
+      'CODE':'AT-01-01',
+      'Part Name':'SHOULDER PUNCH',
+      'Standard':'H-PHAX13-80-P10.10',
+      'Standard Min':1,
+      'Min':2
+    },
+
+    {
+      'Customer':'ATH',
+      'Part No':'606402600C',
+      'CODE':'AT-01-02',
+      'Part Name':'SHOULDER PUNCH',
+      'Standard':'H-PHAX10-80-P6.20',
+      'Standard Min':1,
+      'Min':2
+    },
+
+    {
+      'Customer':'ATH',
+      'Part No':'606402600C',
+      'CODE':'AT-01-03',
+      'Part Name':'PUNCH INSERT',
+      'Standard':'',
+      'Standard Min':'',
+      'Min':2
+    }
+
+  ];
+
+  const wb=XLSX.utils.book_new();
+
+  const ws=XLSX.utils.json_to_sheet(rows);
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    'PART_DATABASE'
+  );
+
+  XLSX.writeFile(
+    wb,
+    'TNC_PART_DATABASE_TEMPLATE.xlsx'
+  );
+}
+
+
+// ==========================================
+// READ EXISTING MASTER KEYS
+// รองรับข้อมูลมากกว่า 1,000 รายการ
+// ==========================================
+
+async function getExistingMasterKeys(){
+
+  const existingKeys=new Set();
+
+  let from=0;
+  const pageSize=1000;
+
+  while(true){
+
+    const {data,error}=await db
+      .from(MASTER_TABLE)
+      .select('part_no,code')
+      .range(from,from+pageSize-1);
+
+    if(error) throw error;
+
+    if(!data||data.length===0) break;
+
+    data.forEach(row=>{
+
+      const no=String(row.part_no||'')
+        .trim()
+        .toUpperCase();
+
+      const codeValue=String(row.code||'')
+        .trim()
+        .toUpperCase();
+
+      existingKeys.add(no+'|'+codeValue);
+
+    });
+
+    if(data.length<pageSize) break;
+
+    from+=pageSize;
+  }
+
+  return existingKeys;
+}
+
+
+// ==========================================
+// IMPORT MASTER EXCEL
+// ==========================================
+
+async function importMasterExcel(file){
+
+  if(!window.XLSX){
+    showStatus('ไม่สามารถโหลดระบบ Excel ได้','error');
+    return;
+  }
+
+  const btn=$('importMasterBtn');
+
+  btn.disabled=true;
+  btn.textContent='กำลังตรวจสอบข้อมูล...';
+
+  try{
+
+    // อ่านไฟล์ Excel
+    const buffer=await file.arrayBuffer();
+
+    const workbook=XLSX.read(buffer,{
+      type:'array',
+      cellDates:true
+    });
+
+    const sheet=workbook.Sheets[
+      workbook.SheetNames[0]
+    ];
+
+    if(!sheet){
+      throw new Error('ไม่พบ Sheet ในไฟล์ Excel');
+    }
+
+    const sourceRows=XLSX.utils.sheet_to_json(sheet,{
+      defval:'',
+      raw:false
+    });
+
+    if(!sourceRows.length){
+      throw new Error('ไม่พบข้อมูลในไฟล์ Excel');
+    }
+
+
+    // ======================================
+    // VALIDATE DATA
+    // ======================================
+
+    const errors=[];
+    const validRows=[];
+    const fileKeys=new Set();
+
+    sourceRows.forEach((raw,index)=>{
+
+      const row={};
+
+      Object.keys(raw).forEach(key=>{
+        row[masterExcelKey(key)]=raw[key];
+      });
+
+      const rowNo=index+2;
+
+      const customerValue=masterExcelCell(
+        row,
+        ['Customer','Customer Name']
+      );
+
+      const part_no=masterExcelCell(
+        row,
+        ['Part No','Part Number','part_no']
+      );
+
+      const codeValue=masterExcelCell(
+        row,
+        ['CODE','Part Code']
+      );
+
+      const part_name=masterExcelCell(
+        row,
+        ['Part Name','Name']
+      );
+
+      const standardValue=masterExcelCell(
+        row,
+        ['Standard']
+      );
+
+      const standardMinValue=masterExcelCell(
+        row,
+        ['Standard Min','Standard Minimum','standard_min']
+      );
+
+      const minValue=masterExcelCell(
+        row,
+        ['Min','Min Stock','Minimum Stock']
+      );
+
+      const standard_min=
+        standardMinValue===''?null:Number(standardMinValue);
+
+      const min_stock=
+        minValue===''?0:Number(minValue);
+
+
+      if(!part_no){
+
+        errors.push(`แถว ${rowNo}: ไม่มี Part No`);
+
+        return;
+      }
+
+
+      if(
+        standardMinValue!=='' &&
+        (
+          !Number.isInteger(standard_min) ||
+          standard_min<0
+        )
+      ){
+
+        errors.push(
+          `แถว ${rowNo}: Standard Min ต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป`
+        );
+
+        return;
+      }
+
+
+      if(
+        minValue!=='' &&
+        (
+          !Number.isInteger(min_stock) ||
+          min_stock<0
+        )
+      ){
+
+        errors.push(
+          `แถว ${rowNo}: Min ต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป`
+        );
+
+        return;
+      }
+
+
+      // ตรวจซ้ำภายในไฟล์
+      const duplicateKey=
+        part_no.trim().toUpperCase()+
+        '|'+
+        codeValue.trim().toUpperCase();
+
+
+      if(fileKeys.has(duplicateKey)){
+
+        errors.push(
+          `แถว ${rowNo}: PART NO + CODE ซ้ำกันในไฟล์`
+        );
+
+        return;
+      }
+
+      fileKeys.add(duplicateKey);
+
+
+      validRows.push({
+
+        rowNo,
+
+        customer:customerValue,
+
+        part_no:part_no.trim(),
+
+        code:codeValue.trim(),
+
+        part_name:part_name,
+
+        standard:standardValue,
+
+        standard_min,
+
+        min_stock
+
+      });
+
+    });
+
+
+    if(!validRows.length){
+
+      throw new Error(
+        'ไม่มีข้อมูลที่ถูกต้อง\n'+
+        errors.slice(0,10).join('\n')
+      );
+    }
+
+
+    // ======================================
+    // CHECK EXISTING DATA IN SUPABASE
+    // ======================================
+
+    btn.textContent='กำลังตรวจสอบข้อมูลเดิม...';
+
+    const existingKeys=await getExistingMasterKeys();
+
+    const insertRows=[];
+
+    let duplicateCount=0;
+
+    validRows.forEach(row=>{
+
+      const key=
+        row.part_no.toUpperCase()+
+        '|'+
+        row.code.toUpperCase();
+
+      if(existingKeys.has(key)){
+
+        duplicateCount++;
+
+        return;
+      }
+
+      existingKeys.add(key);
+
+      insertRows.push({
+
+        customer:row.customer||null,
+
+        part_no:row.part_no,
+
+        code:row.code||null,
+
+        part_name:row.part_name||null,
+
+        standard:row.standard||null,
+
+        standard_min:row.standard_min,
+
+        min_stock:row.min_stock
+
+      });
+
+    });
+
+
+    if(!insertRows.length){
+
+      showStatus(
+        `ไม่มีรายการใหม่ | ข้ามข้อมูลซ้ำ ${duplicateCount} รายการ`,
+        'info'
+      );
+
+      return;
+    }
+
+
+    // ======================================
+    // PREVIEW BEFORE SAVE
+    // ======================================
+
+    const preview=insertRows
+      .slice(0,10)
+      .map((row,index)=>
+        `${index+1}. ${row.part_no} | ${row.code||'-'} | ${row.part_name||'-'}`
+      )
+      .join('\n');
+
+
+    const confirmText=
+      `ตรวจสอบข้อมูลก่อนนำเข้า\n\n`+
+      `รายการใหม่: ${insertRows.length} รายการ\n`+
+      `ข้อมูลซ้ำที่ข้าม: ${duplicateCount} รายการ\n`+
+      `ข้อมูลผิดพลาด: ${errors.length} แถว\n\n`+
+      `ตัวอย่างข้อมูล:\n${preview}\n\n`+
+      `ยืนยันบันทึกลงฐานข้อมูลหรือไม่?`;
+
+
+    if(!window.confirm(confirmText)){
+      return;
+    }
+
+
+    // ======================================
+    // INSERT TO SUPABASE
+    // บันทึกครั้งละ 100 รายการ
+    // ======================================
+
+    btn.textContent='กำลังบันทึกข้อมูล...';
+
+    let inserted=0;
+
+    for(let i=0;i<insertRows.length;i+=100){
+
+      const batch=insertRows.slice(i,i+100);
+
+      const {error}=await db
+        .from(MASTER_TABLE)
+        .insert(batch);
+
+      if(error){
+
+        throw new Error(
+          `บันทึกชุดที่ ${Math.floor(i/100)+1} ไม่สำเร็จ: `+
+          error.message
+        );
+      }
+
+      inserted+=batch.length;
+    }
+
+
+    // โหลดข้อมูลใหม่จากฐานข้อมูล
+    await loadInventory();
+
+
+    let message=
+      `นำเข้า PART/CODE สำเร็จ ${inserted} รายการ`+
+      ` | ข้ามข้อมูลซ้ำ ${duplicateCount} รายการ`;
+
+
+    if(errors.length){
+
+      message+=
+        ` | พบข้อมูลผิดพลาด ${errors.length} แถว`+
+        ` | ${errors.slice(0,5).join(' / ')}`;
+
+    }
+
+
+    showStatus(
+      message,
+      errors.length?'info':'success'
+    );
+
+
+  }catch(error){
+
+    console.error(error);
+
+    showStatus(
+      'นำเข้า PART/CODE ไม่สำเร็จ: '+
+      (error.message||error),
+      'error'
+    );
+
+  }finally{
+
+    btn.disabled=false;
+
+    btn.textContent='⇧ Import PART / CODE';
+
+    $('importMasterFile').value='';
+
+  }
+}
+
+
+// ==========================================
 // UI EVENTS
 // ==========================================
 
@@ -1767,6 +2260,11 @@ $('exportHistoryBtn').addEventListener('click',exportHistory);
 $('historySearch').addEventListener('input',renderAllHistory);
 $('historyType').addEventListener('change',renderAllHistory);
 
+
+// ==========================================
+// ORIGINAL IMPORT IN / OUT EVENTS
+// ==========================================
+
 $('importBtn').addEventListener(
   'click',
   ()=>openModal('importModal')
@@ -1787,6 +2285,29 @@ $('importFile').addEventListener('change',e=>{
   if(e.target.files[0]){
     importExcel(e.target.files[0]);
   }
+});
+
+
+// ==========================================
+// NEW MASTER IMPORT EVENTS
+// ==========================================
+
+$('importMasterBtn').addEventListener(
+  'click',
+  ()=>$('importMasterFile').click()
+);
+
+$('masterTemplateBtn').addEventListener(
+  'click',
+  downloadMasterTemplate
+);
+
+$('importMasterFile').addEventListener('change',e=>{
+
+  if(e.target.files[0]){
+    importMasterExcel(e.target.files[0]);
+  }
+
 });
 
 
